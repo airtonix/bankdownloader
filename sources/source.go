@@ -6,28 +6,32 @@ import (
 )
 
 type Source struct {
-	//
-	Name string
-
-	//
+	Name   string
+	Domain string
 	Config any
+	Page   playwright.Page
+}
 
-	//
-	Page playwright.Page
+type NewSourceParams struct {
+	Domain string
 }
 
 func (s *Source) OpenBrowser() error {
 	pw, err := playwright.Run()
+	cwd := core.GetCwd()
 	core.AssertErrorToNilf("could not launch playwright: %w", err)
-	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(true),
+	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
+		DownloadsPath: cwd,
+		Headless:      playwright.Bool(true),
 	})
-	core.AssertErrorToNilf("could not launch Chromium: %w", err)
+	core.AssertErrorToNilf("could not launch browser: %w", err)
 	context, err := browser.NewContext()
 	core.AssertErrorToNilf("could not create context: %w", err)
 	page, err := context.NewPage()
 	core.AssertErrorToNilf("could not create page: %w", err)
+	isConnected := context.Browser().IsConnected()
 
+	core.LogLine("browser connected: %t", isConnected)
 	s.Page = page
 
 	return nil

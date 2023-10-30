@@ -1,12 +1,13 @@
 package sources
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/airtonix/bank-downloaders/core"
 )
 
-type AnzConfig struct {
+type AnzCredentials struct {
 	// username is the customer registration number for ANZ internet banking.
 	Username string `json:"username" yaml:"username"`
 	// password is the password for ANZ internet banking.
@@ -15,20 +16,25 @@ type AnzConfig struct {
 
 type AnzSource struct {
 	*Source
-	Config AnzConfig
 }
 
-func (source *AnzSource) Login(username, password string) error {
+func (source *AnzSource) Login(credentials any) error {
 	page := source.Page
-	config := source.Config
+
+	loginDetails := credentials.(AnzCredentials)
+	url :=
+		fmt.Sprintf("%s/internetbanking", source.Domain)
+	core.LogLine("visiting: %s", url)
 
 	// start at the login page
-	var _, err = page.Goto("https://login.anz.com/internetbanking")
-	core.AssertErrorToNilf("could not goto: %w", err)
+	var _, err = page.Goto(url)
+	core.AssertErrorToNilf(
+		fmt.Sprintf("could not goto: %s", url),
+		err)
 
 	// Login
-	page.GetByLabel("Customer Registration Number").Fill(config.Username)
-	page.GetByLabel("Password").Fill(config.Password)
+	page.GetByLabel("Customer Registration Number").Fill(loginDetails.Username)
+	page.GetByLabel("Password").Fill(loginDetails.Password)
 	page.Locator("//button[type='submit']").Click()
 
 	// wait for the account page to load
@@ -85,10 +91,11 @@ func (source *AnzSource) DownloadTransactions(
 // ensure AnzSource satisfies the SourceCommand interface
 var _ SourceCommand = &AnzSource{}
 
-func NewAnzSource() SourceCommand {
+func NewAnzSource(params NewSourceParams) SourceCommand {
 	return &AnzSource{
 		Source: &Source{
-			Name: "anz",
+			Name:   "anz",
+			Domain: params.Domain,
 		},
 	}
 }

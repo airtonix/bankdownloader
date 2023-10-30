@@ -43,6 +43,11 @@ var downloadCmd = &cobra.Command{
 
 				source.OpenBrowser()
 
+				// login to the source
+				err = source.Login(
+					job.Credentials,
+				)
+
 				// download the transactions
 				transactionFilename, err := source.DownloadTransactions(
 					account.Number,

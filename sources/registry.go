@@ -1,12 +1,11 @@
 package sources
 
-import "time"
+import (
+	"time"
+)
 
 type SourceCommand interface {
-	Login(
-		username string,
-		password string,
-	) error
+	Login(credentials any) error
 
 	// function to download the transactions
 	DownloadTransactions(
@@ -48,7 +47,11 @@ func InitRegistry() {
 	// register all the sources
 
 	// assign anz as a Source[any] to satisfy the compiler
-	registry.Register("anz", NewAnzSource())
+	registry.Register("anz", NewAnzSource(
+		NewSourceParams{
+			Domain: "https://www.anz.com.au",
+		},
+	))
 }
 
 func GetRegistry() SourceRegistry {

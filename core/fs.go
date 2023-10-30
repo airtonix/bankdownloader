@@ -36,3 +36,11 @@ func FileExists(path string) bool {
 func Dos2Unix(str string) string {
 	return strings.ReplaceAll(str, "\r\n", "\n")
 }
+
+type Cwd *string
+
+func GetCwd() Cwd {
+	cwd, err := os.Getwd()
+	AssertErrorToNilf("could not get cwd: %w", err)
+	return &cwd
+}
