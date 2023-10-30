@@ -15,5 +15,5 @@ func AssertErrorToNilf(message string, err error) bool {
 
 func LogLine(message string, args ...any) {
 	output := fmt.Sprintf(message, args...)
-	fmt.Printf("%s \n", output)
+	log.Println(output)
 }

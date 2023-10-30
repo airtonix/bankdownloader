@@ -6,10 +6,10 @@ import (
 )
 
 type Source struct {
-	Name   string
-	Domain string
-	Config any
-	Page   playwright.Page
+	Name   string          // name of the source
+	Domain string          // domain name of the source
+	Config any             // configuration for the source
+	Page   playwright.Page // playwright page object
 }
 
 type NewSourceParams struct {

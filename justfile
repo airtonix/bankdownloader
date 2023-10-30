@@ -1,16 +1,10 @@
 BINARY_NAME := "bankdownloader"
 
 build: 
-    go build \
-        -o bin/ \
-        -v
+    go build -o bin/
 
 test:
-    go test -v \
-        ./...
+    for PACKAGE in $(go list ./...); do go test -v ${PACKAGE}; done;
 
 setup:
-    go run \
-        github.com/playwright-community/playwright-go/cmd/playwright@latest \
-        install \
-        --with-deps
+    go get download
