@@ -83,8 +83,8 @@ func (source *AnzSource) Login(credentials any) error {
 }
 
 func (source *AnzSource) DownloadTransactions(
-	accountNumber string,
 	accountName string,
+	accountNumber string,
 	format string,
 	fromDate time.Time,
 	toDate time.Time,
@@ -110,11 +110,19 @@ func (source *AnzSource) DownloadTransactions(
 
 	// change to date range mode
 	page.Locator(pageObjects.ExportDateRangeModeButton).Click()
+
 	// select the date range fromDate
-	page.Locator(pageObjects.ExportDateRangeFromDateInput).Fill(fromDate.Format("12/09/2023"))
+	fromDateString := fromDate.Format("02/01/2006")
+	page.Locator(pageObjects.ExportDateRangeFromDateInput).Fill(fromDateString)
+
 	// select the date range toDate
-	page.Locator(pageObjects.ExportDateRangeToDateInput).Fill(toDate.Format("12/09/2023"))
-	core.LogLine("selected date range: %s - %s", fromDate.Format("12/09/2023"), toDate.Format("12/09/2023"))
+	toDateString := toDate.Format("02/01/2006")
+	page.Locator(pageObjects.ExportDateRangeToDateInput).Fill(toDateString)
+
+	core.LogLine(
+		"selected date range: %s - %s",
+		fromDateString, toDateString,
+	)
 
 	// select the downlaod format by clicking the label "Software package"
 	page.Locator(pageObjects.ExportDownloadFormatDropdownLabel).Click()
@@ -142,6 +150,7 @@ func NewAnzSource(params NewSourceParams) SourceCommand {
 		Source: &Source{
 			Name:   "anz",
 			Domain: params.Domain,
+			Entity: &Entity{},
 		},
 	}
 }

@@ -14,7 +14,12 @@ var initDmd = &cobra.Command{
 		userconfig := config.GetConfig()
 		userconfig.Save()
 
-		err := playwright.Install()
+		err := playwright.Install(&playwright.RunOptions{
+			Browsers:            []string{"firefox"},
+			SkipInstallBrowsers: true,
+			Verbose:             true,
+		})
+
 		if core.AssertErrorToNilf("could not install playwright: %w", err) {
 			return
 		}

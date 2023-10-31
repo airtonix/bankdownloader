@@ -1,14 +1,12 @@
 package config
 
 import (
-	"errors"
-	"fmt"
-	"os"
-
 	_ "embed"
 
 	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/airtonix/bank-downloaders/schemas"
+	log "github.com/sirupsen/logrus"
 
 	"gopkg.in/yaml.v3"
 )
@@ -33,79 +31,104 @@ type Config struct {
 	Jobs       []Job  `json:"jobs" yaml:"jobs"`
 }
 
-// Config Singleton
-var config Config
-var configFileName string
-var defaultConfig = Config{}
-
-func (c *Config) Save() error {
+func (this *Config) Save() error {
 	// marshal contents into bytes[]
-	SaveYamlFile(c, configFileName)
+	SaveYamlFile(this, configFilePath)
 	return nil
 }
 
-func LoadConfig(configFile string) {
-	configFilename := "config.yaml"
-	configFilepath := core.GetUserFilePath(configFilename)
-
-	// envvar runtime override
-	if envConfigFile := os.Getenv("BANKSCRAPER_CONFIG"); envConfigFile != "" {
-		NewConfig(envConfigFile)
-
-		// args filename override
-	} else if configFile != "" {
-		NewConfig(configFile)
-
-		// config file in current directory
-	} else if core.FileExists(configFilename) {
-		NewConfig(configFilename)
-
-		// config file in XDG directory
-	} else if core.FileExists(configFilepath) {
-		NewConfig(configFilepath)
-
-	} else {
-		InitializeConfig(config, configFilepath)
-		config.Save()
-	}
+// Config Singleton
+var config Config
+var configFilePath string
+var defaultConfig = &Config{}
+var defaultConfigTree = &yaml.Node{
+	Kind: yaml.DocumentNode,
+	Content: []*yaml.Node{
+		{
+			Kind: yaml.MappingNode,
+			Content: []*yaml.Node{
+				{
+					Kind:        yaml.ScalarNode,
+					Value:       "dateFormat",
+					HeadComment: "# yaml-language-server: $schema=https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/config.json",
+				},
+				{
+					Kind:  yaml.ScalarNode,
+					Style: yaml.DoubleQuotedStyle,
+					Value: "DD/MM/YYYY",
+				},
+				{
+					Kind:  yaml.ScalarNode,
+					Value: "jobs",
+				},
+				{
+					Kind:    yaml.SequenceNode,
+					Content: []*yaml.Node{},
+				},
+			},
+		},
+	},
 }
 
-func NewConfig(configFilePath string) (Config, error) {
-	var configJson interface{}
-	var err error
+func NewConfig(filepathArg string) (Config, error) {
+	filename := "config.yaml"
+	filepath := core.ResolveFileArg(
+		filepathArg,
+		"BANKDOWNLOADER_CONFIG",
+		filename,
+	)
 
-	content, err := LoadYamlFile(configFilePath)
+	err := mergo.Merge(
+		&config,
+		defaultConfig,
+		mergo.WithOverrideEmptySlice)
 
-	err = yaml.Unmarshal(content, &configJson)
-	if core.AssertErrorToNilf("could not unmarshal config file: %w", err) {
+	if core.AssertErrorToNilf("could not ensure default config values: %w", err) {
 		return config, err
 	}
 
-	err = schema.Validate(configJson)
-	if core.AssertErrorToNilf("could not validate config file: %w", err) {
-		return config, errors.New(fmt.Sprintf("Invalid configuration\n%#v", err))
+	if !core.FileExists(filepath) {
+		log.Info("creating default config: ", filepath)
+		CreateDefaultConfig(filepath)
 	}
 
-	err = yaml.Unmarshal(content, &config)
-	if core.AssertErrorToNilf("could not unmarshal config file: %w", err) {
+	configObject, err := LoadYamlFile[Config](
+		filepath,
+		schemas.GetConfigSchema(),
+	)
+	if core.AssertErrorToNilf("could not load config file: %w", err) {
 		return config, err
 	}
 
-	InitializeConfig(config, configFilePath)
+	err = mergo.Merge(
+		&config,
+		configObject,
+		mergo.WithOverrideEmptySlice)
 
+	if core.AssertErrorToNilf("could not merge user config values: %w", err) {
+		return config, err
+	}
+
+	log.Info("config ready: ", filepath)
+
+	// store the config as a singleton
+	config = configObject
+	configFilePath = filepath
+
+	// also return it
 	return config, nil
 }
 
-func InitializeConfig(c Config, filepath string) error {
-	var err error
+func CreateDefaultConfig(configFilePath string) Config {
+	var defaultConfig Config
 
-	err = mergo.Merge(&config, defaultConfig, mergo.WithOverrideEmptySlice)
-	if core.AssertErrorToNilf("could not merge config file: %w", err) {
-		return err
+	content, err := yaml.Marshal(defaultConfigTree)
+	WriteFile("config.yaml", content)
+
+	if core.AssertErrorToNilf("could not marshal default config: %w", err) {
+		return defaultConfig
 	}
-
-	configFileName = filepath
-	return nil
+	return defaultConfig
 }
 
 func GetConfig() Config {

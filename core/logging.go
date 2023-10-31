@@ -2,7 +2,8 @@ package core
 
 import (
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func AssertErrorToNilf(message string, err error) bool {

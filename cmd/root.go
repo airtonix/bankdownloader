@@ -46,8 +46,8 @@ func Execute() {
 func Initialize() {
 	InitLogger(nil)
 	sources.InitRegistry()
-	config.LoadConfig(configFileArg)
-	config.LoadHistory(historyFileArg)
+	config.NewConfig(configFileArg)
+	config.NewHistory(historyFileArg)
 }
 
 func InitLogger(hook log.Hook) {

@@ -1,25 +1,13 @@
-package config
+package schemas
 
 import (
 	_ "embed"
-
-	"encoding/json"
+	"strings"
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/santhosh-tekuri/jsonschema/v5"
+	log "github.com/sirupsen/logrus"
 )
-
-//go:embed schema.json
-var SchemaJson string
-var schema *jsonschema.Schema
-
-func GetSchema() any {
-	var schemaObject any
-	err := json.Unmarshal([]byte(SchemaJson), &schemaObject)
-	core.AssertErrorToNilf("could not unmarshal schema.json: %w", err)
-
-	return schemaObject
-}
 
 var itemsUniquePropertiesMeta = jsonschema.MustCompileString("itemsUniqueProperties.json", `{
 	"properties": {
@@ -66,4 +54,45 @@ func (s itemsUniquePropertiesSchema) Validate(ctx jsonschema.ValidationContext, 
 		}
 	}
 	return nil
+}
+
+//go:embed config.json
+var ConfigSchemaJson string
+var configSchema *jsonschema.Schema
+
+//go:embed history.json
+var HistorySchemaJson string
+var historySchema *jsonschema.Schema
+
+func Initialize() {
+	var err error
+	c := jsonschema.NewCompiler()
+	c.RegisterExtension(
+		"itemsUniqueProperties",
+		itemsUniquePropertiesMeta,
+		itemsUniquePropertiessCompiler{},
+	)
+
+	err = c.AddResource("config.json", strings.NewReader(ConfigSchemaJson))
+	if core.AssertErrorToNilf("could not add schemas/config.json: %w", err) {
+		log.Fatal(err)
+		return
+	}
+	configSchema = c.MustCompile("config.json")
+
+	err = c.AddResource("history.json", strings.NewReader(HistorySchemaJson))
+	if core.AssertErrorToNilf("could not add schemas/history.json: %w", err) {
+		log.Fatal(err)
+		return
+	}
+	historySchema = c.MustCompile("history.json")
+
+}
+
+func GetConfigSchema() *jsonschema.Schema {
+	return configSchema
+}
+
+func GetHistorySchema() *jsonschema.Schema {
+	return historySchema
 }

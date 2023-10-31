@@ -3,13 +3,20 @@ package sources
 import (
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/playwright-community/playwright-go"
+	"github.com/yogiis/golang-web-automation/helpers"
 )
 
+type Entity struct {
+	Pw      *playwright.Playwright
+	Browser playwright.Browser
+	Page    playwright.Page
+}
+
 type Source struct {
-	Name   string          // name of the source
-	Domain string          // domain name of the source
-	Config any             // configuration for the source
-	Page   playwright.Page // playwright page object
+	Name    string // name of the source
+	Domain  string // domain name of the source
+	Config  any    // configuration for the source
+	*Entity        // entity for the source
 }
 
 type NewSourceParams struct {
@@ -17,22 +24,24 @@ type NewSourceParams struct {
 }
 
 func (s *Source) OpenBrowser() error {
-	pw, err := playwright.Run()
 	cwd := core.GetCwd()
-	core.AssertErrorToNilf("could not launch playwright: %w", err)
+	pw, err := playwright.Run()
+	helpers.LogPanicln(err)
+
+	s.Entity.Pw = pw
+
 	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 		DownloadsPath: cwd,
 		Headless:      playwright.Bool(true),
 	})
-	core.AssertErrorToNilf("could not launch browser: %w", err)
-	context, err := browser.NewContext()
-	core.AssertErrorToNilf("could not create context: %w", err)
-	page, err := context.NewPage()
-	core.AssertErrorToNilf("could not create page: %w", err)
-	isConnected := context.Browser().IsConnected()
+	helpers.LogPanicln(err)
+	s.Entity.Browser = browser
 
-	core.LogLine("browser connected: %t", isConnected)
-	s.Page = page
+	page, err := browser.NewPage()
+	helpers.LogPanicln(err)
+	err = page.SetViewportSize(1920, 1440)
+	helpers.LogPanicln(err)
+	s.Entity.Page = page
 
 	return nil
 }

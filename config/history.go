@@ -3,11 +3,11 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
-	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/airtonix/bank-downloaders/schemas"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -89,74 +89,76 @@ func (h *History) SaveEvent(
 	return nil
 }
 
-func (h *History) Save() error {
+func (this *History) Save() error {
 	// marshal contents into bytes[]
 
-	SaveYamlFile(h, historyFileName)
+	SaveYamlFile(this, historyFilePath)
 	return nil
 }
 
 // History Singleton
 var history History
-var historyFileName string
+var historyFilePath string
 var defaultHistory = []History{}
-
-func LoadHistory(historyFile string) {
-	historyFilename := "history.yaml"
-	historyFilepath := core.GetUserFilePath(historyFilename)
-
-	// envvar runtime override
-	if envhistoryFile := os.Getenv("BANKSCRAPER_CONFIG"); envhistoryFile != "" {
-		NewHistory(envhistoryFile)
-
-		// args filename override
-	} else if historyFile != "" {
-		NewHistory(historyFile)
-
-		// config file in current directory
-	} else if core.FileExists(historyFilename) {
-		NewHistory(historyFilename)
-
-		// config file in XDG directory
-	} else if core.FileExists(historyFilepath) {
-		NewHistory(historyFilepath)
-
-	} else {
-		EnsureStoragePath(historyFilepath)
-	}
+var defaultHistoryTree = &yaml.Node{
+	Kind: yaml.DocumentNode,
+	Content: []*yaml.Node{
+		{
+			Kind: yaml.MappingNode,
+			Content: []*yaml.Node{
+				{
+					Kind:        yaml.ScalarNode,
+					Value:       "events",
+					HeadComment: "# yaml-language-server: $schema=https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/history.json",
+				},
+				{
+					Kind:    yaml.SequenceNode,
+					Content: []*yaml.Node{},
+				},
+			},
+		},
+	},
 }
 
-func NewHistory(historyFilePath string) (History, error) {
-	var historyJson interface{}
-	var err error
+func NewHistory(filepathArg string) (History, error) {
+	filename := "history.yaml"
+	filepath := core.ResolveFileArg(
+		filepathArg,
+		"BANKDOWNLOADER_HISTORY",
+		filename,
+	)
 
-	content, err := LoadYamlFile(historyFilePath)
+	if !core.FileExists(filepath) {
+		log.Info("creating default history: ", filepath)
+		CreateDefaultHistory(filepath)
+	}
+
+	historyObject, err := LoadYamlFile[History](
+		filepath,
+		schemas.GetHistorySchema(),
+	)
 	if core.AssertErrorToNilf("could not load history file: %w", err) {
 		return history, err
 	}
 
-	err = yaml.Unmarshal(content, &historyJson)
-	if core.AssertErrorToNilf("could not unmarshal history file: %w", err) {
-		return history, err
-	}
+	// store the history as a singleton
+	history = historyObject
+	historyFilePath = filepath
 
-	err = schema.Validate(historyJson)
-	if core.AssertErrorToNilf("could not validate history file: %w", err) {
-		return history, errors.New(fmt.Sprintf("Invalid configuration\n%#v", err))
-	}
-
-	err = yaml.Unmarshal(content, &history)
-	if core.AssertErrorToNilf("could not unmarshal history file: %w", err) {
-		return history, err
-	}
-
-	err = mergo.Merge(&history, defaultHistory, mergo.WithOverrideEmptySlice)
-	if core.AssertErrorToNilf("could not merge history file: %w", err) {
-		return history, err
-	}
-
-	historyFileName = historyFilePath
+	// also return it
 	return history, nil
+}
+
+func CreateDefaultHistory(historyFilePath string) History {
+	var defaultHistory History
+
+	content, err := yaml.Marshal(defaultConfigTree)
+	WriteFile("history.yaml", content)
+
+	if core.AssertErrorToNilf("could not marshal default history: %w", err) {
+		return defaultHistory
+	}
+	return defaultHistory
 }
 
 func GetHistory() History {

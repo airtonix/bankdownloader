@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -19,30 +20,59 @@ func SaveYamlFile(
 	if core.AssertErrorToNilf("could not marshal config: %w", err) {
 		return err
 	}
+	WriteFile(filepath, contents)
+
+	log.Info("saved: ", filepath)
+
+	return nil
+}
+
+func WriteFile(filepath string, contents []byte) (err error) {
 	EnsureStoragePath(filepath)
 
 	err = os.WriteFile(filepath, contents, 0644)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
 // LoadYamlFile loads a yaml file
-func LoadYamlFile(path string) ([]byte, error) {
+func LoadYamlFile[T any](
+	path string,
+	schema *jsonschema.Schema,
+) (T, error) {
 	path, err := filepath.Abs(path)
+	var fileJson interface{}
+	var output T
+
 	if core.AssertErrorToNilf("could not get absolute path: %w", err) {
-		return nil, err
+		return output, err
 	}
 
 	content, err := os.ReadFile(path)
 	if core.AssertErrorToNilf("could not read file: %w", err) {
-		return nil, err
+		return output, err
 	}
 
-	log.Info("Using file: ", path)
-	return content, err
+	err = yaml.Unmarshal(content, &fileJson)
+	if core.AssertErrorToNilf("could not unmarshal file: "+path+" [ %w ]", err) {
+		return output, err
+	}
+
+	err = schema.Validate(fileJson)
+	if core.AssertErrorToNilf("could not validate file: "+path+" [ %s ]", err) {
+		return output, err
+	}
+
+	err = yaml.Unmarshal(content, &output)
+	if core.AssertErrorToNilf("could not unmarshal file: "+path+" [ %w ]", err) {
+		return output, err
+	}
+
+	log.Info("loaded: ", path)
+
+	return output, nil
 }
 
 func EnsureStoragePath(path string) error {

@@ -116,7 +116,7 @@ func TestAnzSourceDownload(t *testing.T) {
 			switch strings.TrimSpace(request.URL.Path) {
 
 			case "/IBUI/#/download-transaction":
-				w.Write([]byte(strings.ToUpper(content)))
+				w.Write([]byte(content))
 
 			default:
 				w.WriteHeader(http.StatusNotFound)

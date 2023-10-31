@@ -1,0 +1,51 @@
+{
+	"$schema": "https://json-schema.org/draft-07/schema",
+	"$id": "https://raw.github.com/airtonix/bankdownloader/config/schema.json",
+	"title": "Bank Downloader",
+	"description": "Bank Downloader configuration",
+	"type": "object",
+	"properties": {
+		"events": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"source": {
+						"type": "string",
+						"description": "name of the downloader to use",
+						"minLength": 1
+					},
+					"lastDateFetched": {
+						"type": "string",
+						"description": "latest date covered by this event",
+						"minimum": 1
+					},
+					"account": {
+						"type": "object",
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "name of the account",
+								"minLength": 1
+							},
+							"number": {
+								"type": "string",
+								"description": "account number",
+								"minLength": 1
+							}
+						}
+					}
+				},
+				"required": [
+					"source", "lastDateFetched", "account"
+				],
+				"additionalProperties": false
+			},
+			"minItems": 0
+		}
+	},
+	"required": [
+		"events"
+	],
+	"additionalProperties": false
+}

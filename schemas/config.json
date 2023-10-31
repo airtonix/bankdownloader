@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema",
-  "$id": "https://raw.github.com/airtonix/bankdownloader/schema.json",
+  "$id": "https://raw.github.com/airtonix/bankdownloader/config/schema.json",
   "title": "Bank Downloader",
   "description": "Bank Downloader configuration",
   "type": "object",
@@ -70,9 +70,10 @@
         },
         "required": ["name"],
         "additionalProperties": false
-      }
+      },
+      "minItems": 0
     }
   },
-  "required": ["journal_path", "db_path"],
+  "required": ["jobs"],
   "additionalProperties": false
 }
