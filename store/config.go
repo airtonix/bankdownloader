@@ -1,4 +1,4 @@
-package config
+package store
 
 import (
 	_ "embed"
@@ -33,6 +33,7 @@ type Config struct {
 
 func (this *Config) Save() error {
 	// marshal contents into bytes[]
+	log.Info("saving config: ", configFilePath)
 	SaveYamlFile(this, configFilePath)
 	return nil
 }
@@ -88,7 +89,6 @@ func NewConfig(filepathArg string) (Config, error) {
 	}
 
 	if !core.FileExists(filepath) {
-		log.Info("creating default config: ", filepath)
 		CreateDefaultConfig(filepath)
 	}
 
@@ -121,9 +121,9 @@ func NewConfig(filepathArg string) (Config, error) {
 
 func CreateDefaultConfig(configFilePath string) Config {
 	var defaultConfig Config
-
+	log.Info("creating default config: ", configFilePath)
 	content, err := yaml.Marshal(defaultConfigTree)
-	WriteFile("config.yaml", content)
+	WriteFile(configFilePath, content)
 
 	if core.AssertErrorToNilf("could not marshal default config: %w", err) {
 		return defaultConfig

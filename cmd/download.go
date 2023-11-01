@@ -3,9 +3,9 @@ package cmd
 import (
 	"log"
 
-	"github.com/airtonix/bank-downloaders/config"
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/sources"
+	"github.com/airtonix/bank-downloaders/store"
 	"github.com/spf13/cobra"
 )
 
@@ -14,8 +14,8 @@ var downloadCmd = &cobra.Command{
 	Short: "dwnloads transactions from a source",
 	Run: func(cmd *cobra.Command, args []string) {
 		registry := sources.GetRegistry()
-		userhistory := config.GetHistory()
-		jobs := config.GetJobs()
+		userhistory := store.GetHistory()
+		jobs := store.GetJobs()
 
 		// loop through the jobs
 		// for each job, download the transactions

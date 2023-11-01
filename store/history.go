@@ -1,4 +1,4 @@
-package config
+package store
 
 import (
 	"errors"
@@ -140,6 +140,7 @@ func NewHistory(filepathArg string) (History, error) {
 	if core.AssertErrorToNilf("could not load history file: %w", err) {
 		return history, err
 	}
+	log.Info("history ready: ", filepath)
 
 	// store the history as a singleton
 	history = historyObject
@@ -152,8 +153,8 @@ func NewHistory(filepathArg string) (History, error) {
 func CreateDefaultHistory(historyFilePath string) History {
 	var defaultHistory History
 
-	content, err := yaml.Marshal(defaultConfigTree)
-	WriteFile("history.yaml", content)
+	content, err := yaml.Marshal(defaultHistoryTree)
+	WriteFile(historyFilePath, content)
 
 	if core.AssertErrorToNilf("could not marshal default history: %w", err) {
 		return defaultHistory
