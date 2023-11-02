@@ -10,7 +10,7 @@
 			"request": "launch",
 			"mode": "auto",
 			"program": "${workspaceRoot}",
-			"args": ["init"],
+			"args": ["download"],
 			"showLog": true
 		}
 	]

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/airtonix/bank-downloaders/meta"
-	"github.com/airtonix/bank-downloaders/sources"
 	"github.com/airtonix/bank-downloaders/store"
 	log "github.com/sirupsen/logrus"
 	"github.com/snowzach/rotatefilehook"
@@ -45,7 +44,6 @@ func Execute() {
 
 func Initialize() {
 	InitLogger(nil)
-	sources.InitRegistry()
 	store.NewConfig(configFileArg)
 	store.NewHistory(historyFileArg)
 }

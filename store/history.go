@@ -1,10 +1,10 @@
 package store
 
 import (
-	"errors"
-	"fmt"
+	"sort"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/schemas"
 	log "github.com/sirupsen/logrus"
@@ -19,33 +19,58 @@ type HistoryEvent struct {
 }
 
 type History struct {
-	Events []HistoryEvent `yaml:"history"`
+	Events []HistoryEvent `yaml:"events"`
 }
 
 func (h *History) GetEvents(
 	source string,
 	accountNo string,
 	accountName string,
-) (time.Time, time.Time, error) {
-	var fromDate time.Time
-	var toDate time.Time
-	format := GetDateFormat()
+) []HistoryEvent {
+	events := []HistoryEvent{}
 
 	for _, event := range h.Events {
 		if event.Source == source && event.Account == accountNo {
-			fromDate := core.StringToDate(event.FromDate, format)
-			toDate := core.StringToDate(event.ToDate, format)
-			return fromDate, toDate, nil
+
+			// push event onto events
+			events = append(events, event)
 		}
 	}
-	errorMsg := errors.New(
-		fmt.Sprintf("could not find history for source: %s, account: %s",
-			source,
-			accountName,
-		),
+	return events
+}
+
+func (h *History) GetLatestEvent(
+	source string,
+	accountNo string,
+	accountName string,
+) (time.Time, time.Time, error) {
+	format := GetDateFormat()
+
+	events := h.GetEvents(
+		source,
+		accountNo,
+		accountName,
 	)
 
-	return fromDate, toDate, errorMsg
+	// if there are no events, return zero dates
+	if len(events) == 0 {
+		return time.Time{}, time.Time{}, nil
+	}
+
+	// sort events by toDate
+	sort.Slice(events, func(i, j int) bool {
+		toDate := events[i].ToDate
+		fromDate := events[j].ToDate
+		return toDate < fromDate
+	})
+
+	// get the last event
+	event := events[len(events)-1]
+
+	fromDate := core.StringToDate(event.FromDate, format)
+	toDate := core.StringToDate(event.ToDate, format)
+
+	return fromDate, toDate, nil
 }
 
 // determine next date to fetch transactions from
@@ -55,7 +80,7 @@ func (h *History) GetNextDate(
 	accountName string,
 	daysToFetch int,
 ) (time.Time, error) {
-	_, toDate, err := h.GetEvents(
+	_, toDate, err := h.GetLatestEvent(
 		source,
 		accountNo,
 		accountName,
@@ -99,7 +124,7 @@ func (this *History) Save() error {
 // History Singleton
 var history History
 var historyFilePath string
-var defaultHistory = []History{}
+var defaultHistory = History{}
 var defaultHistoryTree = &yaml.Node{
 	Kind: yaml.DocumentNode,
 	Content: []*yaml.Node{
@@ -128,14 +153,24 @@ func NewHistory(filepathArg string) (History, error) {
 		filename,
 	)
 
+	err := mergo.Merge(
+		&history,
+		defaultHistory,
+		mergo.WithOverrideEmptySlice)
+
+	if core.AssertErrorToNilf("could not ensure default history values: %w", err) {
+		return history, err
+	}
+
 	if !core.FileExists(filepath) {
-		log.Info("creating default history: ", filepath)
 		CreateDefaultHistory(filepath)
 	}
 
-	historyObject, err := LoadYamlFile[History](
+	var historyObject History
+	err = LoadYamlFile[History](
 		filepath,
 		schemas.GetHistorySchema(),
+		&historyObject,
 	)
 	if core.AssertErrorToNilf("could not load history file: %w", err) {
 		return history, err
@@ -152,6 +187,8 @@ func NewHistory(filepathArg string) (History, error) {
 
 func CreateDefaultHistory(historyFilePath string) History {
 	var defaultHistory History
+
+	log.Info("creating default config: ", configFilePath)
 
 	content, err := yaml.Marshal(defaultHistoryTree)
 	WriteFile(historyFilePath, content)

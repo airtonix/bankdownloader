@@ -41,38 +41,38 @@ func WriteFile(filepath string, contents []byte) (err error) {
 func LoadYamlFile[T any](
 	path string,
 	schema *jsonschema.Schema,
-) (T, error) {
+	target *T,
+) error {
 	path, err := filepath.Abs(path)
 	var fileJson interface{}
-	var output T
 
 	if core.AssertErrorToNilf("could not get absolute path: %w", err) {
-		return output, err
+		return err
 	}
 
 	content, err := os.ReadFile(path)
 	if core.AssertErrorToNilf("could not read file: %w", err) {
-		return output, err
+		return err
 	}
 
 	err = yaml.Unmarshal(content, &fileJson)
 	if core.AssertErrorToNilf("could not unmarshal file: "+path+" [ %w ]", err) {
-		return output, err
+		return err
 	}
 
 	err = schema.Validate(fileJson)
 	if core.AssertErrorToNilf("could not validate file: "+path+" [ %s ]", err) {
-		return output, err
+		return err
 	}
 
-	err = yaml.Unmarshal(content, &output)
+	err = yaml.Unmarshal(content, target)
 	if core.AssertErrorToNilf("could not unmarshal file: "+path+" [ %w ]", err) {
-		return output, err
+		return err
 	}
 
 	log.Info("loaded: ", path)
 
-	return output, nil
+	return nil
 }
 
 func EnsureStoragePath(path string) error {
