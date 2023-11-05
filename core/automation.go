@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/url"
+	"path"
 
 	"github.com/gookit/color"
 	"github.com/sirupsen/logrus"
@@ -20,13 +21,15 @@ type Automation struct {
 
 func (s *Automation) OpenBrowser() error {
 	cwd := GetCwd()
+	downloadsPath := path.Join(cwd, "downloads")
+
 	pw, err := playwright.Run()
 	helpers.LogPanicln(err)
 
 	s.Pw = pw
 
 	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
-		DownloadsPath: cwd,
+		DownloadsPath: &downloadsPath,
 		Headless:      playwright.Bool(true),
 	})
 	helpers.LogPanicln(err)
@@ -85,6 +88,16 @@ func HasMatchingElements(locator playwright.Locator) bool {
 
 func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool {
 	if !HasMatchingElements(locator) {
+		page, err := locator.Page()
+		if err == nil {
+			cwd := GetCwd()
+			if _, err := page.Screenshot(playwright.PageScreenshotOptions{
+				Path:     playwright.String(path.Join(cwd, "screenshots", itemName)),
+				FullPage: playwright.Bool(true),
+			}); err != nil {
+				logrus.Errorln("Could not take screenshot: ", err)
+			}
+		}
 		logrus.Panic(
 			color.FgRed.Render(fmt.Sprintf("could not find item: %s", itemName)),
 		)
@@ -93,6 +106,7 @@ func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool
 	return true
 }
 
+// function that prints the inner texts of matching elements
 func PrintMatchingElements(locator playwright.Locator) string {
 	elements, err := locator.AllInnerTexts()
 	if err != nil {
@@ -100,6 +114,26 @@ func PrintMatchingElements(locator playwright.Locator) string {
 		return ""
 	}
 	return JoinStrings(elements)
+}
+
+// function that prints the input values of matching elements
+func PrintMatchingInputValues(locator playwright.Locator) string {
+	elements, err := locator.All()
+	if err != nil {
+		log.Errorln("Could not get elements: ", err)
+		return ""
+	}
+	var values []string
+	for _, element := range elements {
+		value, err := element.InputValue()
+		if err != nil {
+			log.Errorln("Could not get input value: ", err)
+			return ""
+		}
+		values = append(values, value)
+	}
+
+	return JoinStrings(values)
 }
 
 // function that joins strings

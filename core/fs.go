@@ -37,12 +37,10 @@ func Dos2Unix(str string) string {
 	return strings.ReplaceAll(str, "\r\n", "\n")
 }
 
-type Cwd *string
-
-func GetCwd() Cwd {
+func GetCwd() string {
 	cwd, err := os.Getwd()
 	AssertErrorToNilf("could not get cwd: %w", err)
-	return &cwd
+	return cwd
 }
 
 // ResolveFileArg resolves the filename to use for a config file

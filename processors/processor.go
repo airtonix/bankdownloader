@@ -68,6 +68,7 @@ func (processor *Processor) GetName() string {
 }
 
 type ProcessorConfig struct {
+	Domain      string `json:"domain" yaml:"domain"`           // the domain of the source
 	Format      string `json:"format" yaml:"format"`           // format to download transactions in
 	DaysToFetch int    `json:"daysToFetch" yaml:"daysToFetch"` // the number of days to fetch transactions for
 }

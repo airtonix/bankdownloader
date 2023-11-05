@@ -56,6 +56,7 @@ var defaultAnzConfig = AnzConfig{
 		Password: "",
 	},
 	ProcessorConfig: &ProcessorConfig{
+		Domain:      "https://login.anz.com",
 		Format:      "csv",
 		DaysToFetch: 30,
 	},
