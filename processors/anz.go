@@ -6,7 +6,6 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/kr/pretty"
-	"github.com/playwright-community/playwright-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,50 +53,22 @@ func (processor *AnzProcessor) Login(automation *core.Automation) error {
 
 	logrus.Debugln("waiting for login page to load...")
 	// wait for the login page to load
-	header := page.Locator(pageObjects.LoginHeader)
-	header.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(header, "LoginHeader")
-	logrus.Debugln("header", core.PrintMatchingElements(header))
-
-	// Login
-	logrus.Debugln("finding login fields...")
+	automation.Find(pageObjects.LoginHeader)
 
 	// Username
-	usernameField := page.Locator(pageObjects.LoginUsernameInput)
-	usernameField.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(usernameField, "LoginUsernameInput")
-	usernameField.Fill(loginDetails.Username)
+	automation.Fill(pageObjects.LoginUsernameInput, loginDetails.Username)
 
 	// Password
-	passwordField := page.Locator(pageObjects.LoginPasswordInput)
-	passwordField.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(usernameField, "LoginPasswordInput")
-	passwordField.Fill(loginDetails.Password)
+	automation.FillSensitive(pageObjects.LoginPasswordInput, loginDetails.Password)
 
 	// LoginButton
-	loginButton := page.Locator(pageObjects.LoginButton)
-	loginButton.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(loginButton, "LoginButton")
-	loginButton.Click()
+	automation.Click(pageObjects.LoginButton)
 
 	logrus.Info("authenticating...")
 
 	// Accounts Page
 	// wait for the account page to load
-	accountsPageHeader := page.Locator(pageObjects.AccountsPageHeader)
-	accountsPageHeader.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(accountsPageHeader, "accounts page header")
-	logrus.Debugln("accounts header", core.PrintMatchingElements(accountsPageHeader))
+	automation.Find(pageObjects.AccountsPageHeader)
 	logrus.Info("authenticated")
 	return nil
 }
@@ -120,7 +91,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 	pageUrl := automation.GetPageUrlObject()
 
 	url := fmt.Sprintf(
-		"%s://%s/IBUI/#/download-transaction",
+		"%s://%s/IBUI/#/home",
 		pageUrl.Scheme,
 		pageUrl.Host,
 	)
@@ -142,101 +113,45 @@ func (processor *AnzProcessor) DownloadTransactions(
 		err)
 	page.SetViewportSize(1200, 900)
 
+	// find the account button
+	automation.Click(fmt.Sprintf(pageObjects.AccountsListAccountButton, accountNumber))
+
+	// find the account button
+	automation.Click(pageObjects.AccountGotoExportButton)
+
 	// Transactions Page
 	// wait for the page to load
-	exportPageHeader := page.Locator(pageObjects.ExportPageHeader)
-	exportPageHeader.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(exportPageHeader, "ExportPageHeader")
-	logrus.Debugln("ExportPageHeader >", core.PrintMatchingElements(exportPageHeader))
+	automation.Find(pageObjects.ExportPageHeader)
 
 	// pick the account by clicking the label "Account"
-	accountDropdownLabel := page.Locator(pageObjects.ExportAccountDropdownLabel)
-	accountDropdownLabel.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(accountDropdownLabel, "ExportAccountDropdownLabel")
-	logrus.Debug("ExportAccountDropdownLabel >", core.PrintMatchingElements(accountDropdownLabel))
-	accountDropdownLabel.Click()
-
-	// then click the ul > li named account number entry that is the adjacent sibling of the labels parent parent
-	accountDropdownOption := page.Locator(fmt.Sprintf(pageObjects.ExportAccountDropdownOption, accountNumber))
-	accountDropdownOption.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(accountDropdownOption, "ExportAccountDropdownOption")
-	logrus.Debug("ExportAccountDropdownOption > ", core.PrintMatchingElements(accountDropdownOption))
-	accountDropdownOption.Click()
+	automation.Click(pageObjects.ExportAccountDropdownLabel)
+	// then click the account option
+	automation.Click(fmt.Sprintf(pageObjects.ExportAccountDropdownOption, accountNumber))
 	logrus.Debug("selected account: ", accountNumber)
 
 	// change to date range mode
-	exportDateRangeMode := page.Locator(pageObjects.ExportDateRangeModeButton)
-	exportDateRangeMode.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(exportDateRangeMode, "ExportDateRangeModeButton")
-	logrus.Debug("ExportDateRangeModeButton > ", core.PrintMatchingElements(exportDateRangeMode))
-	exportDateRangeMode.Click()
-
+	automation.Click(pageObjects.ExportDateRangeModeButton)
 	// select the date range fromDate
-	fromDateInput := page.Locator(pageObjects.ExportDateRangeFromDateInput)
-	fromDateInput.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(fromDateInput, "ExportDateRangeFromDateInput")
-	logrus.Debug("ExportDateRangeFromDateInput > ", core.PrintMatchingElements(fromDateInput))
-	fromDateInput.Fill(fromDateString)
-	logrus.Debug("ExportDateRangeFromDateInput.value > ", core.PrintMatchingInputValues(fromDateInput))
-
+	automation.Fill(pageObjects.ExportDateRangeFromDateInput, fromDateString)
 	// select the date range toDate
-	toDateInput := page.Locator(pageObjects.ExportDateRangeToDateInput)
-	toDateInput.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(toDateInput, "ExportDateRangeToDateInput")
-	logrus.Debug("ExportDateRangeToDateInput > ", core.PrintMatchingElements(toDateInput))
-	toDateInput.Fill(toDateString)
-	logrus.Debug("ExportDateRangeToDateInput.value > ", core.PrintMatchingInputValues(toDateInput))
-
+	automation.Fill(pageObjects.ExportDateRangeToDateInput, toDateString)
 	logrus.Debugf(
 		"selected date range: %s - %s",
 		fromDateString, toDateString,
 	)
-	// close the date popups
-	exportPageHeader.Click()
 
 	// select the downlaod format by clicking the label "Software package"
-	formatDropdownLabel := page.Locator(pageObjects.ExportDownloadFormatDropdownLabel)
-	formatDropdownLabel.WaitFor(playwright.LocatorWaitForOptions{
-		State:   playwright.WaitForSelectorStateAttached,
-		Timeout: playwright.Float(1000),
-	})
-	core.AssertHasMatchingElements(formatDropdownLabel, "ExportDownloadFormatDropdownLabel")
-	logrus.Debug("ExportDownloadFormatDropdownLabel > ", core.PrintMatchingInputValues(formatDropdownLabel))
-	formatDropdownLabel.Click()
-
-	formatDropdownOption := page.Locator(fmt.Sprintf(pageObjects.ExportDownloadFormatDropdownOption, format))
-	formatDropdownOption.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(formatDropdownOption, "ExportDownloadFormatDropdownOption")
-	logrus.Debug("ExportDownloadFormatDropdownOption > ", core.PrintMatchingInputValues(formatDropdownOption))
-	formatDropdownOption.Click()
-
+	automation.Focus(pageObjects.ExportDownloadFormatDropdownLabel)
+	// select the download format
+	automation.Click(fmt.Sprintf(pageObjects.ExportDownloadFormatDropdownOption, format))
 	logrus.Debug("selected format: ", format)
 
 	// click the download button
-	downloadButton := page.Locator(pageObjects.ExportDownloadButton)
-	downloadButton.WaitFor(playwright.LocatorWaitForOptions{
-		State: playwright.WaitForSelectorStateAttached,
-	})
-	core.AssertHasMatchingElements(downloadButton, "ExportDownloadButton")
-	logrus.Debug("downloadButton", core.PrintMatchingInputValues(downloadButton))
 	download, err := page.ExpectDownload(func() error {
 		logrus.Debug("downloading  transactions")
-		return downloadButton.Click()
+		return automation.Click(pageObjects.ExportDownloadButton)
 	})
+
 	core.AssertErrorToNilf("could not download: %w", err)
 
 	filename := download.SuggestedFilename()
@@ -279,6 +194,8 @@ type AnzPageObjects struct {
 	LoginPasswordInput                 string `json:"login_password_input" yaml:"login_password_input"`
 	LoginButton                        string `json:"login_button" yaml:"login_button"`
 	AccountsPageHeader                 string `json:"accounts_page_header" yaml:"accounts_page_header"`
+	AccountsListAccountButton          string `json:"accounts_list_account_button" yaml:"accounts_list_account_button"`
+	AccountGotoExportButton            string `json:"account_goto_export_button" yaml:"account_goto_export_button"`
 	ExportPageHeader                   string `json:"export_page_header" yaml:"export_page_header"`
 	ExportAccountDropdownLabel         string `json:"export_account_dropdown_label" yaml:"export_account_dropdown_label"`
 	ExportAccountDropdownOption        string `json:"export_account_dropdown_option" yaml:"export_account_dropdown_option"`
@@ -296,13 +213,15 @@ var pageObjects = AnzPageObjects{
 	LoginPasswordInput:                 "input[name='password']",
 	LoginButton:                        "button[data-test-id='log-in-btn']",
 	AccountsPageHeader:                 "h1[id='home-title']",
+	AccountsListAccountButton:          "//div[@id='main-div'] //li[contains(., '%s')]",
+	AccountGotoExportButton:            "//div[@id='search-download'] //button[contains(., 'Download')]",
 	ExportPageHeader:                   "h1[id='search-transaction']",
 	ExportAccountDropdownLabel:         "label[for='drop-down-search-transaction-account1-dropdown-field']",
 	ExportAccountDropdownOption:        "//ul[@data-test-id='drop-down-search-transaction-account1-dropdown-results']/li[contains(.,'%s')]",
 	ExportDateRangeModeButton:          "ul[role='tablist'] li[id='Date rangetab']",
 	ExportDateRangeFromDateInput:       "input[id='fromdate-textfield']",
 	ExportDateRangeToDateInput:         "input[id='todate-textfield']",
-	ExportDownloadFormatDropdownLabel:  "//label[@data-test-id='drop-down-search-software-dropdown-field-input-text-label']",
-	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[contains(. '%s')]",
+	ExportDownloadFormatDropdownLabel:  "//label[@for='drop-down-search-software-dropdown-field'][contains(., 'Software package')]",
+	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[contains(., '%s')]",
 	ExportDownloadButton:               "//button[contains(., 'Download')]",
 }

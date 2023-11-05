@@ -6,6 +6,7 @@ require github.com/playwright-community/playwright-go v0.3800.1
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -29,6 +30,7 @@ require (
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gookit/color v1.5.4
+	github.com/gosimple/slug v1.13.1
 	github.com/kr/pretty v0.3.1
 	github.com/onrik/gorm-logrus v0.5.0
 	github.com/samber/lo v1.38.1

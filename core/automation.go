@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/gookit/color"
+	"github.com/gosimple/slug"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
@@ -16,37 +17,41 @@ import (
 type Automation struct {
 	Pw      *playwright.Playwright
 	Browser playwright.Browser
+	Context playwright.BrowserContext
 	Page    playwright.Page
 }
 
-func (s *Automation) OpenBrowser() error {
+func (this *Automation) OpenBrowser() error {
 	cwd := GetCwd()
 	downloadsPath := path.Join(cwd, "downloads")
 
 	pw, err := playwright.Run()
 	helpers.LogPanicln(err)
 
-	s.Pw = pw
+	this.Pw = pw
 
 	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 		DownloadsPath: &downloadsPath,
 		Headless:      playwright.Bool(true),
 	})
 	helpers.LogPanicln(err)
-	s.Browser = browser
+	this.Browser = browser
 
-	page, err := browser.NewPage()
+	context, err := browser.NewContext()
 	helpers.LogPanicln(err)
+	this.Context = context
 
-	s.Page = page
+	page, err := context.NewPage()
+	helpers.LogPanicln(err)
+	this.Page = page
 
 	log.Info("Opened browser")
 
 	return nil
 }
 
-func (s *Automation) CloseBrowser() error {
-	err := s.Browser.Close()
+func (this *Automation) CloseBrowser() error {
+	err := this.Browser.Close()
 	helpers.LogPanicln(err)
 
 	log.Info("Closed browser")
@@ -54,14 +59,70 @@ func (s *Automation) CloseBrowser() error {
 	return nil
 }
 
-func (s *Automation) GetPageUrlObject() url.URL {
-	page := s.Page
+func (this *Automation) GetPageUrlObject() url.URL {
+	page := this.Page
 	obj, err := url.Parse(page.URL())
 	if err != nil {
 		logrus.Errorln("Could not parse url: ", err)
 		return url.URL{}
 	}
 	return *obj
+}
+
+func (this *Automation) Find(selector string) (playwright.Locator, error) {
+	page := this.Page
+
+	locator := page.Locator(selector)
+	locator.WaitFor(playwright.LocatorWaitForOptions{
+		State: playwright.WaitForSelectorStateAttached,
+	})
+	if !AssertHasMatchingElements(locator, selector) {
+		return nil, fmt.Errorf("could not find element: %s", selector)
+	}
+	logrus.Debug(selector, " > ", PrintMatchingElements(locator))
+	return locator, nil
+}
+
+func (this *Automation) Click(selector string) error {
+	locator, err := this.Find(selector)
+	if err != nil {
+		return err
+	}
+	locator.First().Click()
+	return nil
+}
+func (this *Automation) Focus(selector string) error {
+	locator, err := this.Find(selector)
+	if err != nil {
+		return err
+	}
+	locator.First().Focus()
+	return nil
+}
+
+func (this *Automation) Fill(selector string, value string) error {
+	locator, err := this.Find(selector)
+	if err != nil {
+		return err
+	}
+	element := locator.First()
+	element.Fill(value)
+	logrus.Debug(selector, "> Value > ", PrintMatchingInputValues(locator))
+
+	return nil
+}
+
+func (this *Automation) FillSensitive(selector string, value string) error {
+	locator, err := this.Find(selector)
+	if err != nil {
+		return err
+	}
+	element := locator.First()
+	element.Fill(value)
+	typedValue, err := element.InputValue()
+	logrus.Debug(selector, " > MatchesDesiredInput > ", typedValue == value)
+
+	return nil
 }
 
 func NewAutomation() *Automation {
@@ -91,8 +152,9 @@ func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool
 		page, err := locator.Page()
 		if err == nil {
 			cwd := GetCwd()
+			screenshotPath := path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", slug.Make(itemName)))
 			if _, err := page.Screenshot(playwright.PageScreenshotOptions{
-				Path:     playwright.String(path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", itemName))),
+				Path:     playwright.String(screenshotPath),
 				FullPage: playwright.Bool(true),
 			}); err != nil {
 				logrus.Errorln("Could not take screenshot: ", err)
