@@ -1,12 +1,14 @@
 package store
 
 import (
+	"errors"
 	"sort"
 	"time"
 
 	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/schemas"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -43,8 +45,7 @@ func (h *History) GetLatestEvent(
 	source string,
 	accountNo string,
 	accountName string,
-) (time.Time, time.Time, error) {
-	format := GetDateFormat()
+) (HistoryEvent, error) {
 
 	events := h.GetEvents(
 		source,
@@ -54,7 +55,7 @@ func (h *History) GetLatestEvent(
 
 	// if there are no events, return zero dates
 	if len(events) == 0 {
-		return time.Time{}, time.Time{}, nil
+		return HistoryEvent{}, errors.New("no events found")
 	}
 
 	// sort events by toDate
@@ -67,40 +68,60 @@ func (h *History) GetLatestEvent(
 	// get the last event
 	event := events[len(events)-1]
 
-	fromDate := core.StringToDate(event.FromDate, format)
-	toDate := core.StringToDate(event.ToDate, format)
-
-	return fromDate, toDate, nil
+	return event, nil
 }
 
 // determine next date to fetch transactions from
-func (h *History) GetNextDate(
+func (h *History) GetNextEvent(
 	source string,
 	accountNo string,
 	accountName string,
 	daysToFetch int,
-) (time.Time, error) {
-	_, toDate, err := h.GetLatestEvent(
+) HistoryEvent {
+	logrus.Debugln("Days to fetch", daysToFetch)
+	defaultFromDate := core.GetTodayMinusDays(daysToFetch).Format(GetDateFormat())
+	defaultToDate := core.GetToday().Format(GetDateFormat())
+
+	// by default we fetch from today - daysToFetch
+	nextEvent := HistoryEvent{
+		Source:   source,
+		Account:  accountNo,
+		FromDate: defaultFromDate,
+		ToDate:   defaultToDate,
+	}
+
+	event, err := h.GetLatestEvent(
 		source,
 		accountNo,
 		accountName,
 	)
 
-	if core.AssertErrorToNilf("could not get history: %w", err) || toDate.IsZero() {
-		return core.GetTodayMinusDays(daysToFetch), nil
+	if err != nil {
+		logrus.Debugln("No events found, using default")
+		return nextEvent
 	}
 
-	return core.GetDaysAgo(toDate, daysToFetch), nil
+	logrus.Debugln("latest event", event)
+
+	// fromDate will be the last toDate
+	fromDate := event.ToDate
+
+	// if fromDate is less than daysToFetch days ago, compute it
+	daysSinceLastEvent := core.GetDaysBetweenDates(
+		core.StringToDate(fromDate, GetDateFormat()),
+		core.GetToday(),
+	)
+
+	if daysSinceLastEvent < daysToFetch {
+		fromDate = core.GetTodayMinusDays(daysSinceLastEvent).Format(GetDateFormat())
+		nextEvent.FromDate = fromDate
+	}
+
+	return nextEvent
 }
 
 // save the event
-func (h *History) SaveEvent(
-	source string,
-	accountNo string,
-	accountName string,
-	fromDate time.Time,
-	toDate time.Time,
-) error {
+func (this *History) SaveEvent(source string, accountNo string, fromDate time.Time, toDate time.Time) {
 	var event HistoryEvent
 	format := GetDateFormat()
 
@@ -109,9 +130,7 @@ func (h *History) SaveEvent(
 	event.FromDate = fromDate.Format(format)
 	event.ToDate = toDate.Format(format)
 
-	h.Events = append(h.Events, event)
-
-	return nil
+	this.Events = append(this.Events, event)
 }
 
 func (this *History) Save() error {

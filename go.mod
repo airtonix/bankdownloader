@@ -9,10 +9,15 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
-	golang.org/x/sys v0.2.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gorm.io/gorm v1.24.2 // indirect
 )
@@ -23,6 +28,8 @@ require (
 	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
+	github.com/gookit/color v1.5.4
+	github.com/kr/pretty v0.3.1
 	github.com/onrik/gorm-logrus v0.5.0
 	github.com/samber/lo v1.38.1
 	github.com/santhosh-tekuri/jsonschema v1.2.4

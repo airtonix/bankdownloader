@@ -1,4 +1,4 @@
-package sources
+package processors
 
 import (
 	"net/http"
@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/airtonix/bank-downloaders/core"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAnzSourceLogin(t *testing.T) {
-
+	var err error
 	content := `
 		<html>
 			<body>
@@ -45,24 +46,29 @@ func TestAnzSourceLogin(t *testing.T) {
 
 	defer s.Close()
 
-	source := NewAnzSource(NewSourceParams{
-		Domain: s.URL,
+	automation := &core.Automation{}
+
+	source := NewAnzProcessor(&AnzConfig{
+		ProcessorConfig: &ProcessorConfig{
+			Domain: s.URL,
+		},
+		Credentials: &AnzCredentials{
+			Username: "username",
+			Password: "password",
+		},
 	})
+
 	t.Log("Created source")
 
-	source.OpenBrowser()
-	t.Log("Opened browser")
+	automation.OpenBrowser()
 
-	err := source.Login(AnzCredentials{
-		Username: "username",
-		Password: "password",
-	})
+	err = source.Login(automation)
 
 	assert.NoError(t, err, "error")
 }
 
 func TestAnzSourceDownload(t *testing.T) {
-
+	var err error
 	content := `
     <html>
         <body>
@@ -127,22 +133,32 @@ func TestAnzSourceDownload(t *testing.T) {
 
 	defer s.Close()
 
-	source := NewAnzSource(NewSourceParams{
-		Domain: s.URL,
+	automation := &core.Automation{}
+
+	source := NewAnzProcessor(&AnzConfig{
+		&AnzCredentials{
+			Username: "username",
+			Password: "password",
+		},
+		&ProcessorConfig{
+			Domain: s.URL,
+		},
 	})
 	t.Log("Created source")
 
-	source.OpenBrowser()
+	err = automation.OpenBrowser()
+	assert.NoError(t, err, "Problem creating browser")
+
 	t.Log("Opened browser")
 
 	filename, err := source.DownloadTransactions(
 		"My Account",
 		"123456789",
-		"Agrimaster(CSV)",
 		time.Now().Add(-time.Hour*24*30),
 		time.Now(),
+		automation,
 	)
 
-	assert.NoError(t, err, "error")
+	assert.NoError(t, err, "couldn't download transactions")
 	assert.Equal(t, "anz-123456789.csv", filename, "filename")
 }

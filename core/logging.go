@@ -3,18 +3,30 @@ package core
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/gookit/color"
+	"github.com/sirupsen/logrus"
 )
 
 func AssertErrorToNilf(message string, err error) bool {
 	if err != nil {
-		log.Fatalf(message, err)
+		logrus.Panic(
+			color.FgRed.Render(fmt.Sprintf(message, err)),
+		)
 		return true
 	}
 	return false
 }
 
-func LogLine(message string, args ...any) {
-	output := fmt.Sprintf(message, args...)
-	log.Println(output)
+func Header(message string) {
+	fmt.Printf("\n\n%s\n\n",
+		color.FgCyan.Render(message),
+	)
+}
+
+func KeyValue(key string, value any) {
+	fmt.Printf(
+		"%s: %s\n",
+		color.FgYellow.Render(key),
+		color.FgWhite.Render(value),
+	)
 }

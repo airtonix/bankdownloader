@@ -10,12 +10,12 @@
 			"description": "date format used in the history file",
 			"default": "%Y-%m-%d"
 		},
-		"jobs": {
+		"sources": {
 			"type": "array",
 			"items": {
 				"type": "object",
 				"properties": {
-					"source": {
+					"name": {
 						"type": "string",
 						"description": "name of the downloader to use",
 						"minLength": 1
@@ -79,7 +79,7 @@
 					}
 				},
 				"required": [
-					"source"
+					"name"
 				],
 				"additionalProperties": false
 			},
@@ -87,7 +87,7 @@
 		}
 	},
 	"required": [
-		"jobs"
+		"sources"
 	],
 	"additionalProperties": false
 }

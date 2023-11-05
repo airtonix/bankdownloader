@@ -19,6 +19,7 @@ var prefix = "bankscraper"
 var configFileArg string
 var historyFileArg string
 var now string
+var debugFlag bool
 
 var envvarPrefix string = strings.ToUpper(meta.Name)
 var debugEnvVarName string = fmt.Sprintf("%s_DEBUG", envvarPrefix)
@@ -33,6 +34,7 @@ func init() {
 	cobra.OnInitialize(Initialize)
 	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file (default is ./%s.yaml)")
 	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file (default is ./%s-history.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "shwo debug messages")
 }
 
 func Execute() {
@@ -80,6 +82,9 @@ func InitLogger(hook log.Hook) {
 				log.AddHook(rotateFileHook)
 			}
 		}
+	}
+	if debugFlag {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	log.SetFormatter(&formatter)
