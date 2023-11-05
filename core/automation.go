@@ -92,7 +92,7 @@ func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool
 		if err == nil {
 			cwd := GetCwd()
 			if _, err := page.Screenshot(playwright.PageScreenshotOptions{
-				Path:     playwright.String(path.Join(cwd, "screenshots", itemName)),
+				Path:     playwright.String(path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", itemName))),
 				FullPage: playwright.Bool(true),
 			}); err != nil {
 				logrus.Errorln("Could not take screenshot: ", err)

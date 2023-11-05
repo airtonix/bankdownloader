@@ -302,7 +302,7 @@ var pageObjects = AnzPageObjects{
 	ExportDateRangeModeButton:          "ul[role='tablist'] li[id='Date rangetab']",
 	ExportDateRangeFromDateInput:       "input[id='fromdate-textfield']",
 	ExportDateRangeToDateInput:         "input[id='todate-textfield']",
-	ExportDownloadFormatDropdownLabel:  "label[data-test-id='drop-down-search-software-dropdown-field-input-text-label']",
+	ExportDownloadFormatDropdownLabel:  "//label[@data-test-id='drop-down-search-software-dropdown-field-input-text-label']",
 	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[contains(. '%s')]",
 	ExportDownloadButton:               "//button[contains(., 'Download')]",
 }
