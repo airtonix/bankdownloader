@@ -78,8 +78,8 @@ jobs:
         run: |
           if [ "${{ env.ACT }}" = "true" ]; then
             echo "OFFLINE: skipping upload"
-            cp -r ./bank-downloader ./bank-downloader-${RELEASE_TAG}
+            cp -r ./dist/bank-downloaders ./dist/bank-downloaders-${RELEASE_TAG}
           else
-            gh release upload ${RELEASE_TAG} ./bank-downloader#bank-downloader-${RELEASE_TAG}
+            gh release upload ${RELEASE_TAG} ./bin/bank-downloaders#bank-downloaders-${RELEASE_TAG}
           fi
           

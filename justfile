@@ -1,7 +1,7 @@
 BINARY_NAME := "bankdownloader"
 
 build: 
-	go build -o bin/
+	go build -o dist/
 
 test:
 	for PACKAGE in $(go list ./...); do go test -v ${PACKAGE}; done;
@@ -15,3 +15,6 @@ lint:
 setup:
 	go install github.com/go-delve/delve/cmd/dlv@latest
 	go get .
+
+ci:
+	act push
