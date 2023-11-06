@@ -6,8 +6,6 @@
 #  ASDF_PLUGIN_URL_nodejs=https://someurl \
 #  ./pkg/setup-tooling/setup.bash
 #
-export ASDF_PLUGIN_URL_just=https://github.com/heliumbrain/asdf-just.git
-
 
 set -e
 
