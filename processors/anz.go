@@ -56,9 +56,11 @@ func (processor *AnzProcessor) Login(automation *core.Automation) error {
 	automation.Find(pageObjects.LoginHeader)
 
 	// Username
+	automation.Focus(pageObjects.LoginUsernameInput)
 	automation.Fill(pageObjects.LoginUsernameInput, loginDetails.Username)
 
 	// Password
+	automation.Focus(pageObjects.LoginPasswordInput)
 	automation.FillSensitive(pageObjects.LoginPasswordInput, loginDetails.Password)
 
 	// LoginButton
@@ -82,14 +84,19 @@ func (processor *AnzProcessor) DownloadTransactions(
 ) (string, error) {
 	var err error
 	page := automation.Page
+	dateFormat := "02/01/2006"
 
 	var format = processor.Config.Format
-	fromDateString := fromDate.Format("02/01/2006")
-	toDateString := toDate.Format("02/01/2006")
+	fromDateString := fromDate.Format(dateFormat)
+	toDateString := toDate.Format(dateFormat)
 
 	// get the current hostname for the current page
 	pageUrl := automation.GetPageUrlObject()
 
+	// ANZ web app uses the transactions page for two purposes: searching and downloading.
+	// it's only possible to be in one mode or the other as a result of clicking the right button.
+	// As such, when we want to download transactions for an account, we first need to go to the
+	// home page, then click the account button, then click the download button.
 	url := fmt.Sprintf(
 		"%s://%s/IBUI/#/home",
 		pageUrl.Scheme,
@@ -111,6 +118,8 @@ func (processor *AnzProcessor) DownloadTransactions(
 	core.AssertErrorToNilf(
 		fmt.Sprintf("could not goto: %s", url),
 		err)
+	// ANZ web app uses responsive design, so we need to set the viewport size
+	// otherwise we get a different set of selectors (we use the desktop version)
 	page.SetViewportSize(1200, 900)
 
 	// find the account button
@@ -141,28 +150,27 @@ func (processor *AnzProcessor) DownloadTransactions(
 	)
 
 	// select the downlaod format by clicking the label "Software package"
-	automation.Focus(pageObjects.ExportDownloadFormatDropdownLabel)
+	automation.Click(pageObjects.ExportDownloadFormatDropdownLabel)
 	// select the download format
 	automation.Click(fmt.Sprintf(pageObjects.ExportDownloadFormatDropdownOption, format))
 	logrus.Debug("selected format: ", format)
 
 	// click the download button
-	download, err := page.ExpectDownload(func() error {
-		logrus.Debug("downloading  transactions")
-		return automation.Click(pageObjects.ExportDownloadButton)
-	})
-
-	core.AssertErrorToNilf("could not download: %w", err)
-
-	filename := download.SuggestedFilename()
-	download.SaveAs(filename)
-	logrus.Infof("Downloaded %s for %s[%s] %s - %s \n",
-		filename,
-		accountName,
-		accountNumber,
-		fromDateString,
-		toDateString,
+	filename, err := automation.DownloadFile(
+		core.Slugify(
+			fmt.Sprintf(
+				"%s-%s_%d-%d",
+				processor.Name,
+				accountNumber,
+				core.StringToDate(fromDateString, dateFormat).Unix(),
+				core.StringToDate(toDateString, dateFormat).Unix(),
+			)),
+		func() error {
+			return automation.Click(pageObjects.ExportDownloadButton)
+		},
 	)
+
+	logrus.Info("Downloaded", filename)
 
 	return filename, nil
 }

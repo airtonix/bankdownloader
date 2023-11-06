@@ -79,10 +79,11 @@ func (h *History) GetNextEvent(
 	daysToFetch int,
 ) HistoryEvent {
 	logrus.Debugln("Days to fetch", daysToFetch)
-	defaultFromDate := core.GetTodayMinusDays(daysToFetch).Format(GetDateFormat())
-	defaultToDate := core.GetToday().Format(GetDateFormat())
 
-	// by default we fetch from today - daysToFetch
+	// usually banks don't let you download transactions for today.
+	// So we default to a date range from X-1 to today-1
+	defaultFromDate := core.GetTodayMinusDays(daysToFetch + 1).Format(GetDateFormat())
+	defaultToDate := core.GetTodayMinusDays(1).Format(GetDateFormat())
 	nextEvent := HistoryEvent{
 		Source:   source,
 		Account:  accountNo,
@@ -90,6 +91,7 @@ func (h *History) GetNextEvent(
 		ToDate:   defaultToDate,
 	}
 
+	// try to detect a previously recorded event
 	event, err := h.GetLatestEvent(
 		source,
 		accountNo,
@@ -131,12 +133,34 @@ func (this *History) SaveEvent(source string, accountNo string, fromDate time.Ti
 	event.ToDate = toDate.Format(format)
 
 	this.Events = append(this.Events, event)
+	this.Save()
 }
 
 func (this *History) Save() error {
-	// marshal contents into bytes[]
+	var output History
+	var err error
 
-	SaveYamlFile(this, historyFilePath)
+	// TODO: not sure how to merge the default history tree with the history object
+	// this throws an error that src and dest are not the same type
+	// err = mergo.Merge(
+	// 	&output,
+	// 	&defaultHistoryTree,
+	// 	mergo.WithOverrideEmptySlice,
+	// )
+	// if core.AssertErrorToNilf("Problem preparing history to save: %w", err) {
+	// 	return err
+	// }
+
+	err = mergo.Merge(
+		&output,
+		this,
+		mergo.WithOverrideEmptySlice,
+	)
+	if core.AssertErrorToNilf("Problem preparing history to save: %w", err) {
+		return err
+	}
+
+	SaveYamlFile(output, historyFilePath)
 	return nil
 }
 

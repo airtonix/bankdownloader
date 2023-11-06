@@ -25,14 +25,15 @@ func (this *Automation) OpenBrowser() error {
 	cwd := GetCwd()
 	downloadsPath := path.Join(cwd, "downloads")
 
-	pw, err := playwright.Run()
+	pw, err := playwright.Run(&playwright.RunOptions{
+		Browsers: []string{"firefox"},
+	})
 	helpers.LogPanicln(err)
 
 	this.Pw = pw
 
 	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 		DownloadsPath: &downloadsPath,
-		Headless:      playwright.Bool(true),
 	})
 	helpers.LogPanicln(err)
 	this.Browser = browser
@@ -69,7 +70,36 @@ func (this *Automation) GetPageUrlObject() url.URL {
 	return *obj
 }
 
-func (this *Automation) Find(selector string) (playwright.Locator, error) {
+func (this *Automation) DownloadFile(
+	filename string,
+	action func() error,
+) (string, error) {
+	page := this.Page
+	download, err := page.ExpectDownload(action)
+	AssertErrorToNilf("could not expect download: %w", err)
+
+	downloadedFilename := download.SuggestedFilename()
+	ext := path.Ext(downloadedFilename)
+
+	logrus.Debugln("Suggested filename: ", downloadedFilename)
+	logrus.Debugln("Download ext: ", ext)
+
+	storagePath := ResolveFileArg(
+		filename,
+		"BANKDOWNLOADER_DOWNLOADDIR",
+		path.Join("downloads", filename),
+	)
+	savedFilename := path.Join(storagePath, fmt.Sprintf(
+		"%s.%s", filename, ext,
+	))
+	err = download.SaveAs(savedFilename)
+
+	AssertErrorToNilf("could not save file: %w", err)
+
+	return savedFilename, nil
+}
+
+func (this *Automation) PickElements(selector string) (playwright.Locator, error) {
 	page := this.Page
 
 	locator := page.Locator(selector)
@@ -77,50 +107,76 @@ func (this *Automation) Find(selector string) (playwright.Locator, error) {
 		State: playwright.WaitForSelectorStateAttached,
 	})
 	if !AssertHasMatchingElements(locator, selector) {
-		return nil, fmt.Errorf("could not find element: %s", selector)
+		return nil, fmt.Errorf("could not pick elements matching: %s", selector)
 	}
-	logrus.Debug(selector, " > ", PrintMatchingElements(locator))
 	return locator, nil
 }
+func (this *Automation) Find(selector string) error {
+	locator, err := this.PickElements(selector)
+	if err != nil {
+		return err
+	}
 
+	logrus.Debugf(
+		"[Found] %s > %s \n",
+		selector,
+		PrintMatchingElements(locator),
+	)
+	return nil
+}
 func (this *Automation) Click(selector string) error {
-	locator, err := this.Find(selector)
+	locator, err := this.PickElements(selector)
 	if err != nil {
 		return err
 	}
 	locator.First().Click()
+	logrus.Debugf(
+		"[Clicked] %s > %s \n",
+		selector,
+		PrintMatchingElements(locator),
+	)
 	return nil
 }
 func (this *Automation) Focus(selector string) error {
-	locator, err := this.Find(selector)
+	locator, err := this.PickElements(selector)
 	if err != nil {
 		return err
 	}
 	locator.First().Focus()
+	logrus.Debugf(
+		"[Focused] %s > %s \n",
+		selector,
+		PrintMatchingElements(locator),
+	)
 	return nil
 }
-
 func (this *Automation) Fill(selector string, value string) error {
-	locator, err := this.Find(selector)
+	locator, err := this.PickElements(selector)
 	if err != nil {
 		return err
 	}
 	element := locator.First()
 	element.Fill(value)
-	logrus.Debug(selector, "> Value > ", PrintMatchingInputValues(locator))
-
+	logrus.Debugf(
+		"[Focused] %s > %s \n",
+		selector,
+		PrintMatchingInputValues(locator),
+	)
 	return nil
 }
-
 func (this *Automation) FillSensitive(selector string, value string) error {
-	locator, err := this.Find(selector)
+	locator, err := this.PickElements(selector)
 	if err != nil {
 		return err
 	}
 	element := locator.First()
 	element.Fill(value)
 	typedValue, err := element.InputValue()
-	logrus.Debug(selector, " > MatchesDesiredInput > ", typedValue == value)
+	logrus.Debugf(
+		"[FilledSensitive] %s > %t \n",
+		selector,
+		typedValue == value,
+	)
 
 	return nil
 }

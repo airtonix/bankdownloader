@@ -45,6 +45,19 @@ var downloadCmd = &cobra.Command{
 
 				fromDate := core.StringToDate(event.FromDate, store.GetDateFormat())
 				toDate := core.StringToDate(event.ToDate, store.GetDateFormat())
+				daysSinceLastEvent := core.GetDaysBetweenDates(toDate, core.GetToday())
+
+				// if the days since the last event is less than a day
+				// then we don't need to download transactions
+				if daysSinceLastEvent < 1 {
+					logrus.Infoln(
+						fmt.Sprintf(
+							"Skipping %s, Since at least one day has not passed since last download. (%d days)",
+							account.Name, daysSinceLastEvent,
+						),
+					)
+					continue
+				}
 
 				filename, err := source.DownloadTransactions(
 					account.Name,
@@ -63,6 +76,12 @@ var downloadCmd = &cobra.Command{
 						"Downloaded transactions for %s from %s to %s as %s",
 						account.Name, fromDate, toDate, filename,
 					),
+				)
+				history.SaveEvent(
+					source.GetName(),
+					account.Number,
+					fromDate,
+					toDate,
 				)
 			}
 		}

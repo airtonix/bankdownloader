@@ -57,7 +57,7 @@ var defaultAnzConfig = AnzConfig{
 	},
 	ProcessorConfig: &ProcessorConfig{
 		Domain:      "https://login.anz.com",
-		Format:      "csv",
+		Format:      "Quicken(QIF)",
 		DaysToFetch: 30,
 	},
 }
@@ -71,30 +71,26 @@ func NewAnzConfig(config map[string]interface{}) (*AnzConfig, error) {
 		&anzConfig,
 		defaultAnzConfig,
 	)
+
 	if core.AssertErrorToNilf("could not merge default config: %w", err) {
 		return nil, err
 	}
 
 	// merge credentials config
 	credentials := config["credentials"].(map[string]interface{})
-	var anzCredentials AnzCredentials
+
+	// var anzCredentials AnzCredentials
 	err = mergo.Merge(
-		&anzCredentials,
-		NewAnzCredentials(credentials),
+		&anzConfig,
+		AnzConfig{
+			Credentials:     NewAnzCredentials(credentials),
+			ProcessorConfig: NewProcessorConfig(config),
+		},
+		mergo.WithSliceDeepCopy,
 	)
-	if core.AssertErrorToNilf("could not merge credentials config: %w", err) {
+	if core.AssertErrorToNilf("could not merge config: %w", err) {
 		return nil, err
 	}
-	anzConfig.Credentials = &anzCredentials
-
-	// // merge processor config
-	// err = mergo.Merge(
-	// 	&anzConfig.ProcessorConfig,
-	// 	NewProcessorConfig(config),
-	// )
-	// if core.AssertErrorToNilf("could not merge default config: %w", err) {
-	// 	return nil, err
-	// }
 
 	return &anzConfig, nil
 }

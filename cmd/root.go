@@ -20,6 +20,7 @@ var configFileArg string
 var historyFileArg string
 var now string
 var debugFlag bool
+var headlessFlag bool
 
 var envvarPrefix string = strings.ToUpper(meta.Name)
 var debugEnvVarName string = fmt.Sprintf("%s_DEBUG", envvarPrefix)
@@ -35,6 +36,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file (default is ./%s.yaml)")
 	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file (default is ./%s-history.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "shwo debug messages")
+	rootCmd.PersistentFlags().BoolVar(&headlessFlag, "headless", true, "run browser in headless mode?")
 }
 
 func Execute() {

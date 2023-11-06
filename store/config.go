@@ -17,21 +17,6 @@ type JobAccount struct {
 	Number string `json:"number" yaml:"number"`
 }
 
-// func (this *JobAccount) UnmarshalYAML(node *yaml.Node) error {
-// 	var raw interface{}
-// 	if err := node.Decode(&raw); err != nil {
-// 		return err
-// 	}
-
-// 	name := raw.(map[string]interface{})["name"].(string)
-// 	number := raw.(map[string]interface{})["number"].(string)
-
-// 	this.Name = name
-// 	this.Number = number
-
-// 	return nil
-// }
-
 // A job is a set of instructions for downloading transactions from a source
 // We would download transactions for a set of accounts for a number of days
 type ConfigSource struct {
@@ -39,33 +24,6 @@ type ConfigSource struct {
 	Accounts []JobAccount `json:"accounts" yaml:"accounts"` // the accounts to download transactions for
 	Config   any          // the source specific config, ignore it when marshalling
 }
-
-// func (source *ConfigSource) UnmarshalYAML(node *yaml.Node) error {
-// 	var raw interface{}
-// 	if err := node.Decode(&raw); err != nil {
-// 		return err
-// 	}
-
-// 	sourceName := raw.(map[string]interface{})["name"].(string)
-// 	sourceAccounts := raw.(map[string]interface{})["accounts"].([]interface{})
-// 	sourceConfig := raw.(map[string]interface{})["config"].(map[string]interface{})
-
-// 	// set the name
-// 	source.Name = sourceName
-
-// 	// set the accounts
-// 	for _, account := range sourceAccounts {
-// 		// create a new job account
-// 		source.Accounts = append(source.Accounts, JobAccount{
-// 			Name:   account.(map[string]interface{})["name"].(string),
-// 			Number: account.(map[string]interface{})["number"].(string),
-// 		})
-// 	}
-
-// 	source.Config = sourceConfig
-
-// 	return nil
-// }
 
 type Config struct {
 	DateFormat string         `json:"dateFormat" yaml:"dateFormat"` // the format to use for dates
@@ -149,7 +107,8 @@ func NewConfig(filepathArg string) (Config, error) {
 	err = mergo.Merge(
 		&config,
 		configObject,
-		mergo.WithOverrideEmptySlice)
+		mergo.WithOverrideEmptySlice,
+	)
 	if core.AssertErrorToNilf("could not merge user config values: %w", err) {
 		return config, err
 	}

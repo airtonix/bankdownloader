@@ -8,6 +8,7 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/airtonix/bank-downloaders/meta"
+	"github.com/gosimple/slug"
 	"github.com/samber/lo"
 	"golang.org/x/exp/constraints"
 )
@@ -41,6 +42,10 @@ func GetCwd() string {
 	cwd, err := os.Getwd()
 	AssertErrorToNilf("could not get cwd: %w", err)
 	return cwd
+}
+
+func Slugify(thing string) string {
+	return slug.Make(thing)
 }
 
 // ResolveFileArg resolves the filename to use for a config file
