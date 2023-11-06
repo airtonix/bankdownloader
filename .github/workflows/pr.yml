@@ -1,4 +1,4 @@
-name: Check PR title
+name: PR Checks
 
 on:
   pull_request_target:
@@ -35,3 +35,20 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  LintAndTest:
+    runs-on: ubuntu-22.04
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: OS Deps
+        uses: ./.github/actions/setup-os
+      
+      # Just let ASDF do its thing. It's far easier and more reliable than trying to do it ourselves.
+      - name: Tooling
+        uses: ./.github/actions/setup-tooling
+        with:
+          SetupCommand: ./setup.sh
+      - name: Format
+        run: just lint

@@ -67,7 +67,7 @@ jobs:
       - name: Build
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: |
-          ./build.sh Debug
+          just build
 
       # only upload the release artifact if we're online and not testing
       - name: Upload Release Artifact
