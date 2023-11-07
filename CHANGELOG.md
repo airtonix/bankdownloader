@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/airtonix/bankdownloader/compare/v1.1.0...v1.1.1) (2023-11-07)
+
+
+### Bug Fixes
+
+* **ci:** copy goreleaser created binary ([#4](https://github.com/airtonix/bankdownloader/issues/4)) ([63dc293](https://github.com/airtonix/bankdownloader/commit/63dc2938817d8fda31a2c9b1a14a75965fcb811b))
+
 ## [1.1.0](https://github.com/airtonix/bankdownloader/compare/v1.0.0...v1.1.0) (2023-11-07)
 
 
