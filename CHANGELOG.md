@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/airtonix/bankdownloader/compare/v1.1.1...v1.1.2) (2023-11-07)
+
+
+### Bug Fixes
+
+* **ci:** permit publishing docker image ([#9](https://github.com/airtonix/bankdownloader/issues/9)) ([a7c7942](https://github.com/airtonix/bankdownloader/commit/a7c79422c649aac1b0f90f66a1d5b29730dea5e6))
+
 ## [1.1.1](https://github.com/airtonix/bankdownloader/compare/v1.1.0...v1.1.1) (2023-11-07)
 
 
