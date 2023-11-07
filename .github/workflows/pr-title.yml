@@ -14,7 +14,7 @@ jobs:
     outputs:
       checked: ${{ steps.detect.outputs.checked }}
     steps:
-      - uses: marocchino/checkbox-action@v1
+      - uses: marocchino/checkbox-action@83deaedb2f6c61664cccd3f433984e210acbe304
         id: detect
         with:
           action: 'detect'
