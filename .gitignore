@@ -1,5 +1,6 @@
 
+*.log
+bin/
+dist/
 screenshots/
 downloads/
-dist/
-*.log

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "$id": "https://raw.github.com/airtonix/bankdownloader/config/schema.json",
+  "title": "Bank Downloader",
+  "description": "Bank Downloader configuration",
+  "type": "object",
+  "properties": {
+    "dateFormat": {
+      "type": "string",
+      "description": "date format used in the history file",
+      "default": "%Y-%m-%d"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "name of the downloader to use",
+            "minLength": 1
+          },
+          "config": {
+            "type": "object",
+            "description": "configuration for the downloader",
+            "minLength": 1,
+            "properties": {
+              "format": {
+                "type": "string",
+                "description": "Which format should be selected to download",
+                "minLength": 1
+              },
+              "daysToFetch": {
+                "type": "integer",
+                "description": "number of days to fetch",
+                "minimum": 1
+              },
+              "domain": {
+                "type": "string",
+                "description": "domain to use when downloading",
+                "minLength": 1
+              },
+              "outputTemplate": {
+                "type": "string",
+                "description": "template to use when generating the output file",
+                "minLength": 1
+              },
+              "credentials": {
+                "type": "object",
+                "description": "credentials to use when downloading",
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "description": "username to use when downloading",
+                    "minLength": 1
+                  },
+                  "password": {
+                    "type": "string",
+                    "description": "password to use when downloading",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "credentials"
+            ]
+          },
+          "accounts": {
+            "type": "array",
+            "description": "accounts to download",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "name of the account",
+                  "minLength": 1
+                },
+                "number": {
+                  "type": "string",
+                  "description": "account number",
+                  "minLength": 1
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "sources"
+  ],
+  "additionalProperties": false
+}

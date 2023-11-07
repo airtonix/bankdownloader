@@ -32,6 +32,10 @@ func GetTodayMinusDays(days int) time.Time {
 	return GetDaysAgo(Now(), days)
 }
 
+func GetDaysBetweenDates(start time.Time, end time.Time) int {
+	return int(end.Sub(start).Hours() / 24)
+}
+
 func Now() time.Time {
 	if now != nil {
 		return *now

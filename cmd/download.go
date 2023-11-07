@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
 
-	"github.com/airtonix/bank-downloaders/config"
 	"github.com/airtonix/bank-downloaders/core"
-	"github.com/airtonix/bank-downloaders/sources"
+	"github.com/airtonix/bank-downloaders/processors"
+	"github.com/airtonix/bank-downloaders/store"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -13,68 +14,77 @@ var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "dwnloads transactions from a source",
 	Run: func(cmd *cobra.Command, args []string) {
-		registry := sources.GetRegistry()
-		userhistory := config.GetHistory()
-		jobs := config.GetJobs()
+		history := store.GetHistory()
+		automation := core.NewAutomation()
+		core.Header("Downloading Sources")
+		automation.OpenBrowser()
+		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
+		logrus.Infof("strategy: %s", strategy.ToString())
 
-		// loop through the jobs
-		// for each job, download the transactions
-		for _, job := range jobs {
-			// get the source
-			source := registry.GetSource(job.Source)
+		for _, item := range store.GetConfigSources() {
+			source, err := processors.GetProcecssorFactory(
+				item.Name,
+				item.Config.(map[string]interface{}),
+			)
+			if err != nil {
+				continue
+			}
 
-			for _, account := range job.Accounts {
-				// determine the next date to fetch transactions from
-				// based on the number of days to fetch
-				// and the last date we fetched transactions from
-				// if the last date is empty, then we fetch from today - daysToFetch
-				// if the last date is not empty, then we fetch from last date - daysToFetch
-				nextFromDate, err := userhistory.GetNextDate(
-					job.Source,
+			err = source.Login(automation)
+			if core.AssertErrorToNilf("could not login: %w", err) {
+				continue
+			}
+
+			for _, account := range item.Accounts {
+				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
+				fromDate, toDate, err := history.GetDownloadDateRange(
+					source.GetName(),
 					account.Number,
-					account.Name,
-					job.DaysToFetch,
+					source.GetDaysToFetch(),
+					strategy,
 				)
-				if core.AssertErrorToNilf("could not get next date: %w", err) {
+				if err != nil {
+					logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
 					continue
 				}
 
-				nextToDate := core.ToStartOfDay(nextFromDate.AddDate(0, 0, job.DaysToFetch))
-
-				source.OpenBrowser()
-
-				// download the transactions
-				transactionFilename, err := source.DownloadTransactions(
-					account.Number,
+				filename, err := source.DownloadTransactions(
 					account.Name,
-					job.Format,
-					nextFromDate,
-					nextToDate,
+					account.Number,
+					fromDate,
+					toDate,
+					automation,
 				)
 
 				if core.AssertErrorToNilf("could not download transactions: %w", err) {
 					continue
 				}
 
-				log.Printf(
-					"Downloaded transactions for %s from %s to %s as %s",
-					account.Name, nextFromDate, nextToDate, transactionFilename,
+				logrus.Infoln(
+					fmt.Sprintf(
+						"Downloaded transactions for %s from %s to %s as %s",
+						account.Name, fromDate, toDate, filename,
+					),
 				)
-
-				userhistory.SaveEvent(
-					job.Source,
+				history.SaveEvent(
+					source.GetName(),
 					account.Number,
-					account.Name,
-					nextFromDate,
-					nextToDate,
+					toDate,
 				)
 			}
 		}
-
-		userhistory.Save()
 	},
 }
 
 func init() {
+	// TODO: https://github.com/spf13/pflag/issues/236#issuecomment-931600452
+	strategyEnum := core.EnumFlag([]string{"days-ago", "since-last-download"}, "days-ago")
+	downloadCmd.Flags().VarP(
+		strategyEnum,
+		"range-strategy",
+		"r",
+		"strategy to use when determining the date range to download: days-ago, since-last-download",
+	)
+
 	rootCmd.AddCommand(downloadCmd)
 }

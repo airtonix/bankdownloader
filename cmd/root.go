@@ -7,9 +7,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/airtonix/bank-downloaders/config"
 	"github.com/airtonix/bank-downloaders/meta"
-	"github.com/airtonix/bank-downloaders/sources"
+	"github.com/airtonix/bank-downloaders/store"
 	log "github.com/sirupsen/logrus"
 	"github.com/snowzach/rotatefilehook"
 	"github.com/spf13/cobra"
@@ -20,6 +19,8 @@ var prefix = "bankscraper"
 var configFileArg string
 var historyFileArg string
 var now string
+var debugFlag bool
+var headlessFlag bool
 
 var envvarPrefix string = strings.ToUpper(meta.Name)
 var debugEnvVarName string = fmt.Sprintf("%s_DEBUG", envvarPrefix)
@@ -34,6 +35,8 @@ func init() {
 	cobra.OnInitialize(Initialize)
 	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file (default is ./%s.yaml)")
 	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file (default is ./%s-history.yaml)")
+	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "shwo debug messages")
+	rootCmd.PersistentFlags().BoolVar(&headlessFlag, "headless", true, "run browser in headless mode?")
 }
 
 func Execute() {
@@ -45,9 +48,8 @@ func Execute() {
 
 func Initialize() {
 	InitLogger(nil)
-	sources.InitRegistry()
-	config.LoadConfig(configFileArg)
-	config.LoadHistory(historyFileArg)
+	store.NewConfig(configFileArg)
+	store.NewHistory(historyFileArg)
 }
 
 func InitLogger(hook log.Hook) {
@@ -68,7 +70,7 @@ func InitLogger(hook log.Hook) {
 	}
 
 	if os.Getenv(disableLogEnvVarName) != "true" {
-		p, err := config.EnsureLogFilePath()
+		p, err := store.EnsureLogFilePath()
 		if err == nil {
 			rotateFileHook, err := rotatefilehook.NewRotateFileHook(rotatefilehook.RotateFileConfig{
 				Filename:   p,
@@ -82,6 +84,9 @@ func InitLogger(hook log.Hook) {
 				log.AddHook(rotateFileHook)
 			}
 		}
+	}
+	if debugFlag {
+		log.SetLevel(log.DebugLevel)
 	}
 
 	log.SetFormatter(&formatter)
