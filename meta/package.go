@@ -1,6 +1,6 @@
 package meta
 
-const Version = "0.0.0"
+const Version = "0.0.0" // x-release-please-version
 const Name string = "bankdownloader"
 const Author string = "@airtonix"
 const Description string = "Download transactions from your bank"
