@@ -68,9 +68,10 @@ func (processor *Processor) GetName() string {
 }
 
 type ProcessorConfig struct {
-	Domain      string `json:"domain" yaml:"domain"`           // the domain of the source
-	Format      string `json:"format" yaml:"format"`           // format to download transactions in
-	DaysToFetch int    `json:"daysToFetch" yaml:"daysToFetch"` // the number of days to fetch transactions for
+	Domain         string `json:"domain" yaml:"domain"`                 // the domain of the source
+	ExportFormat   string `json:"exportFormat" yaml:"exportFormat"`     // the format to export the transactions in
+	OutputTemplate string `json:"outputTemplate" yaml:"outputTemplate"` // the template to use for the output filename
+	DaysToFetch    int    `json:"daysToFetch" yaml:"daysToFetch"`       // the number of days to fetch transactions for
 }
 
 func (config *ProcessorConfig) UnmarshalYAML(node *yaml.Node) error {
@@ -79,7 +80,7 @@ func (config *ProcessorConfig) UnmarshalYAML(node *yaml.Node) error {
 		return err
 	}
 
-	config.Format = raw.(map[string]interface{})["format"].(string)
+	config.ExportFormat = raw.(map[string]interface{})["exportFormat"].(string)
 	config.DaysToFetch = raw.(map[string]interface{})["daysToFetch"].(int)
 
 	return nil
@@ -94,8 +95,15 @@ func NewProcessorConfig(config map[string]interface{}) *ProcessorConfig {
 		processorConfig.DaysToFetch = config["daysToFetch"].(int)
 	}
 
-	if config["format"] != nil {
-		processorConfig.Format = config["format"].(string)
+	if config["exportFormat"] != nil {
+		processorConfig.ExportFormat = config["exportFormat"].(string)
+	}
+
+	if config["domain"] != nil {
+		processorConfig.Domain = config["domain"].(string)
+	}
+	if config["outputTemplate"] != nil {
+		processorConfig.OutputTemplate = config["outputTemplate"].(string)
 	}
 
 	return &processorConfig

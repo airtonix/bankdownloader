@@ -56,9 +56,10 @@ var defaultAnzConfig = AnzConfig{
 		Password: "",
 	},
 	ProcessorConfig: &ProcessorConfig{
-		Domain:      "https://login.anz.com",
-		Format:      "Quicken(QIF)",
-		DaysToFetch: 30,
+		Domain:         "https://login.anz.com",
+		ExportFormat:   "Quicken(QIF)",
+		OutputTemplate: "{{ .SourceSlug }}_{{ .Account.NumberSlug }}_{{ .DateRange.FromUnix }}-{{ .DateRange.ToUnix }}.qif",
+		DaysToFetch:    30,
 	},
 }
 

@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 
 	"github.com/gookit/color"
@@ -208,6 +209,9 @@ func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool
 		page, err := locator.Page()
 		if err == nil {
 			cwd := GetCwd()
+			if _, err := os.Stat(path.Join(cwd, "screenshots")); os.IsNotExist(err) {
+				os.Mkdir(path.Join(cwd, "screenshots"), 0755)
+			}
 			screenshotPath := path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", slug.Make(itemName)))
 			if _, err := page.Screenshot(playwright.PageScreenshotOptions{
 				Path:     playwright.String(screenshotPath),

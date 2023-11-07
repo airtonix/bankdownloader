@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/airtonix/bank-downloaders/store"
 	"github.com/kr/pretty"
 	"github.com/sirupsen/logrus"
 )
@@ -18,7 +19,10 @@ type AnzProcessor struct {
 var _ IProcessor = (*AnzProcessor)(nil)
 
 func (processor *AnzProcessor) GetFormat() string {
-	return processor.Config.Format
+	return processor.Config.ExportFormat
+}
+func (processor *AnzProcessor) GetOutputTemplate() string {
+	return processor.Config.OutputTemplate
 }
 
 func (processor *AnzProcessor) GetDaysToFetch() int {
@@ -86,7 +90,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 	page := automation.Page
 	dateFormat := "02/01/2006"
 
-	var format = processor.Config.Format
+	var format = processor.Config.ExportFormat
 	fromDateString := fromDate.Format(dateFormat)
 	toDateString := toDate.Format(dateFormat)
 
@@ -155,16 +159,19 @@ func (processor *AnzProcessor) DownloadTransactions(
 	automation.Click(fmt.Sprintf(pageObjects.ExportDownloadFormatDropdownOption, format))
 	logrus.Debug("selected format: ", format)
 
+	filenameContext := store.NewFilenameTemplateContext(
+		processor.Name,
+		accountName,
+		accountNumber,
+		fromDate,
+		toDate,
+	)
+
+	filenameTemplate := store.NewFilenameTemplate(processor.Config.OutputTemplate)
+
 	// click the download button
 	filename, err := automation.DownloadFile(
-		core.Slugify(
-			fmt.Sprintf(
-				"%s-%s_%d-%d",
-				processor.Name,
-				accountNumber,
-				core.StringToDate(fromDateString, dateFormat).Unix(),
-				core.StringToDate(toDateString, dateFormat).Unix(),
-			)),
+		filenameTemplate.Render(filenameContext),
 		func() error {
 			return automation.Click(pageObjects.ExportDownloadButton)
 		},

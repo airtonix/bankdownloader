@@ -78,7 +78,6 @@ var downloadCmd = &cobra.Command{
 				history.SaveEvent(
 					source.GetName(),
 					account.Number,
-					fromDate,
 					toDate,
 				)
 			}

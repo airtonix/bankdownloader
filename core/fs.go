@@ -10,6 +10,7 @@ import (
 	"github.com/airtonix/bank-downloaders/meta"
 	"github.com/gosimple/slug"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/constraints"
 )
 
@@ -61,22 +62,28 @@ func ResolveFileArg(
 ) string {
 	xdgFilepath := GetUserFilePath(defaultFilename)
 	envFilepath := os.Getenv(envvarKey)
+	logrus.Debug("envFilepath: ", envFilepath)
+	logrus.Debug("argFilename: ", argFilename)
 
 	// envvar runtime override
 	if envFilepath != "" {
+		logrus.Debug("using envFilepath")
 		return envFilepath
 	}
 
 	// args filename override
 	if argFilename != "" {
+		logrus.Debug("using argFilename")
 		return argFilename
 	}
 
 	// config file in current directory
 	if FileExists(defaultFilename) {
+		logrus.Debug("using defaultFilename")
 		return defaultFilename
 	}
 
+	logrus.Debug("using xdgFilepath")
 	// config file in XDG directory
 	return xdgFilepath
 }

@@ -166,7 +166,7 @@ func (this *History) GetDaysAgo(
 }
 
 // save the event
-func (this *History) SaveEvent(source string, accountNo string, fromDate time.Time, toDate time.Time) {
+func (this *History) SaveEvent(source string, accountNo string, toDate time.Time) {
 	format := GetDateFormat()
 	event := HistoryEvent{
 		Source:          source,

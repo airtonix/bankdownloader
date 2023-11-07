@@ -12,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/snowzach/rotatefilehook"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var prefix = "bankscraper"
@@ -36,11 +35,8 @@ func init() {
 	cobra.OnInitialize(Initialize)
 	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file (default is ./%s.yaml)")
 	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file (default is ./%s-history.yaml)")
-	rootCmd.PersistentFlags().Bool("debug", false, "shwo debug messages")
-	rootCmd.PersistentFlags().Bool("headless", true, "run browser in headless mode?")
-
-	viper.BindPFlag("useDebug", rootCmd.PersistentFlags().Lookup("debug"))
-	viper.BindPFlag("useHeadless", rootCmd.PersistentFlags().Lookup("headless"))
+	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "shwo debug messages")
+	rootCmd.PersistentFlags().BoolVar(&headlessFlag, "headless", true, "run browser in headless mode?")
 }
 
 func Execute() {
