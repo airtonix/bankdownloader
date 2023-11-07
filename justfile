@@ -1,10 +1,15 @@
 BINARY_NAME := "bankdownloader"
+export REGISTRY := "ghcr.io"
+export IMAGE_NAME := "airtonix/bankdownloader"
 
 dev *ARGS:
   go run . {{ARGS}}
 
 build: 
-  go build -o dist/
+  goreleaser build --snapshot --clean
+
+release:
+  goreleaser release --clean --skip-publish --snapshot --rm-dist
 
 test:
   for PACKAGE in $(go list ./...); do go test -v ${PACKAGE}; done;
