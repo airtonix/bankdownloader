@@ -132,6 +132,9 @@ func (processor *AnzProcessor) DownloadTransactions(
 
 	// find the account button
 	automation.Click(fmt.Sprintf(pageObjects.AccountsListAccountButton, accountNumber))
+	automation.Find(pageObjects.AccountsTransactionTabButton)
+	// click the transaction tab button
+	automation.Click(pageObjects.AccountsTransactionTabButton)
 
 	// find the account button
 	automation.Click(pageObjects.AccountGotoExportButton)
@@ -214,6 +217,7 @@ type AnzPageObjects struct {
 	LoginButton                        string `json:"login_button" yaml:"login_button"`
 	AccountsPageHeader                 string `json:"accounts_page_header" yaml:"accounts_page_header"`
 	AccountsListAccountButton          string `json:"accounts_list_account_button" yaml:"accounts_list_account_button"`
+	AccountsTransactionTabButton       string `json:"accounts_transaction_tab_button" yaml:"accounts_transaction_tab_button"`
 	AccountGotoExportButton            string `json:"account_goto_export_button" yaml:"account_goto_export_button"`
 	ExportPageHeader                   string `json:"export_page_header" yaml:"export_page_header"`
 	ExportAccountDropdownLabel         string `json:"export_account_dropdown_label" yaml:"export_account_dropdown_label"`
@@ -233,6 +237,7 @@ var pageObjects = AnzPageObjects{
 	LoginButton:                        "button[data-test-id='log-in-btn']",
 	AccountsPageHeader:                 "h1[id='home-title']",
 	AccountsListAccountButton:          "//div[@id='main-div'] //li[contains(., '%s')]",
+	AccountsTransactionTabButton:       "ul[aria-label='Account Overview'] li[id='Transactionstab']",
 	AccountGotoExportButton:            "//div[@id='search-download'] //button[contains(., 'Download')]",
 	ExportPageHeader:                   "h1[id='search-transaction']",
 	ExportAccountDropdownLabel:         "label[for='drop-down-search-transaction-account1-dropdown-field']",
