@@ -166,7 +166,7 @@ Whether to run the browser in headless mode. Defaults to `true`.
 
 Whether to run the browser in debug mode. Defaults to `false`.
 
-##### `--date-range-mode`
+##### `--range-strategy`
 
 The date range mode to use. Defaults to `days`.
 

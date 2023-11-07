@@ -14,10 +14,9 @@ import (
 )
 
 type HistoryEvent struct {
-	Source   string `yaml:"source"`
-	Account  string `yaml:"account"`
-	FromDate string `yaml:"fromDate"`
-	ToDate   string `yaml:"toDate"`
+	Source          string `yaml:"source"`
+	lastDateFetched string `yaml:"lastDateFetched"`
+	AccountNumber   string `yaml:"accountNumber"`
 }
 
 type History struct {
@@ -27,12 +26,11 @@ type History struct {
 func (h *History) GetEvents(
 	source string,
 	accountNo string,
-	accountName string,
 ) []HistoryEvent {
 	events := []HistoryEvent{}
 
 	for _, event := range h.Events {
-		if event.Source == source && event.Account == accountNo {
+		if event.Source == source && event.AccountNumber == accountNo {
 
 			// push event onto events
 			events = append(events, event)
@@ -44,13 +42,11 @@ func (h *History) GetEvents(
 func (h *History) GetLatestEvent(
 	source string,
 	accountNo string,
-	accountName string,
 ) (HistoryEvent, error) {
 
 	events := h.GetEvents(
 		source,
 		accountNo,
-		accountName,
 	)
 
 	// if there are no events, return zero dates
@@ -58,11 +54,11 @@ func (h *History) GetLatestEvent(
 		return HistoryEvent{}, errors.New("no events found")
 	}
 
-	// sort events by toDate
+	// sort events by lastDateFetched
 	sort.Slice(events, func(i, j int) bool {
-		toDate := events[i].ToDate
-		fromDate := events[j].ToDate
-		return toDate < fromDate
+		there := events[i].lastDateFetched
+		here := events[j].lastDateFetched
+		return there < here
 	})
 
 	// get the last event
@@ -71,67 +67,112 @@ func (h *History) GetLatestEvent(
 	return event, nil
 }
 
-// determine next date to fetch transactions from
-func (h *History) GetNextEvent(
+type HistoryStrategy interface {
+	Strategy() strategy
+}
+
+const (
+	DaysAgo strategy = iota
+	SinceLastDownload
+)
+
+type strategy int
+
+// confirm that strategy implements HistoryStrategy
+var _ HistoryStrategy = strategy(0)
+
+func (h strategy) Strategy() strategy {
+	return h
+}
+
+func NewHistoryStrategy(input string) strategy {
+	switch input {
+	case "days-ago":
+		return DaysAgo
+	case "since-last-download":
+		return SinceLastDownload
+	default:
+		return DaysAgo
+	}
+}
+
+// Calculate the next timeframe to download transactions for.
+//
+// Returns a tuple of `from` and `to` dates.
+//
+// There's always two dates: from and to.
+// Both use the `daysToFetch` config to calculate the date range.
+//
+// The strategy is one of:
+//
+//   - `days-ago`: fetch transactions from `daysToFetch` days ago to yesterday.
+//     `to` is always yesterday, and `from` is yesterday minus `daysToFetch` days ago.
+//
+//   - `since-last-download`: `from` always the last downloaded transaction `lastDateFetched`, and `to` is `lastDateFetched` plus `daysToFetch` days.
+//     If `lastDateFetched` is not available, it will default to `days-ago`.
+//     If `lastDateFetched` plus `daysToFetch` is beyond yesterday, it will default to yeserday.
+func (h *History) GetDownloadDateRange(
 	source string,
 	accountNo string,
-	accountName string,
 	daysToFetch int,
-) HistoryEvent {
-	logrus.Debugln("Days to fetch", daysToFetch)
+	strategy HistoryStrategy,
+) (time.Time, time.Time, error) {
+	var fromDate time.Time
+	var toDate time.Time
 
-	// usually banks don't let you download transactions for today.
-	// So we default to a date range from X-1 to today-1
-	defaultFromDate := core.GetTodayMinusDays(daysToFetch + 1).Format(GetDateFormat())
-	defaultToDate := core.GetTodayMinusDays(1).Format(GetDateFormat())
-	nextEvent := HistoryEvent{
-		Source:   source,
-		Account:  accountNo,
-		FromDate: defaultFromDate,
-		ToDate:   defaultToDate,
+	// Strategy: DaysAgo
+	if strategy.Strategy() == DaysAgo {
+		fromDate, toDate = h.GetDaysAgo(daysToFetch)
+		return fromDate, toDate, nil
 	}
 
-	// try to detect a previously recorded event
-	event, err := h.GetLatestEvent(
-		source,
-		accountNo,
-		accountName,
-	)
+	// Strategy: SinceLastDownload
+	if strategy.Strategy() == SinceLastDownload {
+		// try to detect a previously recorded event
+		event, err := h.GetLatestEvent(
+			source,
+			accountNo,
+		)
 
-	if err != nil {
-		logrus.Debugln("No events found, using default")
-		return nextEvent
+		// if there's no event, use the default
+		if err != nil {
+			logrus.Debugln("No events found, using default")
+			fromDate, toDate = h.GetDaysAgo(daysToFetch)
+			return fromDate, toDate, nil
+		}
+
+		// fromDate will be the last toDate
+		fromDate := core.StringToDate(event.lastDateFetched, time.RFC3339)
+		// toDate will be fromDate plus daysToFetch
+		toDate = fromDate.AddDate(0, 0, daysToFetch)
+
+		// if toDate is beyond yesterday, default to yesterday
+		if toDate.After(core.GetTodayMinusDays(1)) {
+			toDate = core.GetTodayMinusDays(1)
+		}
+
+		return fromDate, toDate, nil
 	}
 
-	logrus.Debugln("latest event", event)
+	return fromDate, toDate, errors.New("Unable to calculate next date range")
+}
 
-	// fromDate will be the last toDate
-	fromDate := event.ToDate
-
-	// if fromDate is less than daysToFetch days ago, compute it
-	daysSinceLastEvent := core.GetDaysBetweenDates(
-		core.StringToDate(fromDate, GetDateFormat()),
-		core.GetToday(),
-	)
-
-	if daysSinceLastEvent < daysToFetch {
-		fromDate = core.GetTodayMinusDays(daysSinceLastEvent).Format(GetDateFormat())
-		nextEvent.FromDate = fromDate
-	}
-
-	return nextEvent
+func (this *History) GetDaysAgo(
+	daysToFetch int,
+) (time.Time, time.Time) {
+	toDate := core.GetTodayMinusDays(1)
+	fromDate := core.GetTodayMinusDays(daysToFetch)
+	return fromDate, toDate
 }
 
 // save the event
 func (this *History) SaveEvent(source string, accountNo string, fromDate time.Time, toDate time.Time) {
-	var event HistoryEvent
 	format := GetDateFormat()
-
-	event.Source = source
-	event.Account = accountNo
-	event.FromDate = fromDate.Format(format)
-	event.ToDate = toDate.Format(format)
-
+	event := HistoryEvent{
+		Source:          source,
+		AccountNumber:   accountNo,
+		lastDateFetched: toDate.Format(format),
+	}
 	this.Events = append(this.Events, event)
 	this.Save()
 }
