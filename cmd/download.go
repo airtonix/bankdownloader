@@ -19,6 +19,7 @@ var downloadCmd = &cobra.Command{
 		core.Header("Downloading Sources")
 		automation.OpenBrowser()
 		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
+		logrus.Infof("strategy: %s", strategy.ToString())
 
 		for _, item := range store.GetConfigSources() {
 			source, err := processors.GetProcecssorFactory(
@@ -42,18 +43,8 @@ var downloadCmd = &cobra.Command{
 					source.GetDaysToFetch(),
 					strategy,
 				)
-
-				daysSinceLastEvent := core.GetDaysBetweenDates(toDate, core.GetToday())
-
-				// if the days since the last event is less than a day
-				// then we don't need to download transactions
-				if daysSinceLastEvent < 1 {
-					logrus.Infoln(
-						fmt.Sprintf(
-							"Skipping %s, Since at least one day has not passed since last download. (%d days)",
-							account.Name, daysSinceLastEvent,
-						),
-					)
+				if err != nil {
+					logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
 					continue
 				}
 
@@ -88,7 +79,12 @@ var downloadCmd = &cobra.Command{
 func init() {
 	// TODO: https://github.com/spf13/pflag/issues/236#issuecomment-931600452
 	strategyEnum := core.EnumFlag([]string{"days-ago", "since-last-download"}, "days-ago")
-	downloadCmd.Flags().VarP(strategyEnum, "range-strategy", "r", "strategy to use when determining the date range to download")
+	downloadCmd.Flags().VarP(
+		strategyEnum,
+		"range-strategy",
+		"r",
+		"strategy to use when determining the date range to download: days-ago, since-last-download",
+	)
 
 	rootCmd.AddCommand(downloadCmd)
 }

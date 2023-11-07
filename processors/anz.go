@@ -60,11 +60,15 @@ func (processor *AnzProcessor) Login(automation *core.Automation) error {
 	automation.Find(pageObjects.LoginHeader)
 
 	// Username
+	automation.Find(pageObjects.LoginUsernameInput)
 	automation.Focus(pageObjects.LoginUsernameInput)
+	automation.Page.WaitForTimeout(1000)
 	automation.Fill(pageObjects.LoginUsernameInput, loginDetails.Username)
 
 	// Password
+	automation.Find(pageObjects.LoginPasswordInput)
 	automation.Focus(pageObjects.LoginPasswordInput)
+	automation.Page.WaitForTimeout(1000)
 	automation.FillSensitive(pageObjects.LoginPasswordInput, loginDetails.Password)
 
 	// LoginButton

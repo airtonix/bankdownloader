@@ -15,7 +15,7 @@ import (
 
 type HistoryEvent struct {
 	Source          string `yaml:"source"`
-	lastDateFetched string `yaml:"lastDateFetched"`
+	LastDateFetched string `yaml:"lastDateFetched"`
 	AccountNumber   string `yaml:"accountNumber"`
 }
 
@@ -56,8 +56,8 @@ func (h *History) GetLatestEvent(
 
 	// sort events by lastDateFetched
 	sort.Slice(events, func(i, j int) bool {
-		there := events[i].lastDateFetched
-		here := events[j].lastDateFetched
+		there := events[i].LastDateFetched
+		here := events[j].LastDateFetched
 		return there < here
 	})
 
@@ -69,6 +69,7 @@ func (h *History) GetLatestEvent(
 
 type HistoryStrategy interface {
 	Strategy() strategy
+	ToString() string
 }
 
 const (
@@ -83,6 +84,16 @@ var _ HistoryStrategy = strategy(0)
 
 func (h strategy) Strategy() strategy {
 	return h
+}
+func (h strategy) ToString() string {
+	switch h {
+	case DaysAgo:
+		return "days-ago"
+	case SinceLastDownload:
+		return "since-last-download"
+	default:
+		return "days-ago"
+	}
 }
 
 func NewHistoryStrategy(input string) strategy {
@@ -142,13 +153,19 @@ func (h *History) GetDownloadDateRange(
 		}
 
 		// fromDate will be the last toDate
-		fromDate := core.StringToDate(event.lastDateFetched, time.RFC3339)
+		fromDate := core.StringToDate(event.LastDateFetched, time.RFC3339)
 		// toDate will be fromDate plus daysToFetch
 		toDate = fromDate.AddDate(0, 0, daysToFetch)
+		yesterday := core.GetTodayMinusDays(1)
 
 		// if toDate is beyond yesterday, default to yesterday
-		if toDate.After(core.GetTodayMinusDays(1)) {
-			toDate = core.GetTodayMinusDays(1)
+		if toDate.After(yesterday) {
+			toDate = yesterday
+		}
+
+		daysSinceLastEvent := core.GetDaysBetweenDates(fromDate, toDate)
+		if daysSinceLastEvent < 1 {
+			return fromDate, toDate, errors.New("Days since last event is less than 1")
 		}
 
 		return fromDate, toDate, nil
@@ -167,11 +184,10 @@ func (this *History) GetDaysAgo(
 
 // save the event
 func (this *History) SaveEvent(source string, accountNo string, toDate time.Time) {
-	format := GetDateFormat()
 	event := HistoryEvent{
 		Source:          source,
 		AccountNumber:   accountNo,
-		lastDateFetched: toDate.Format(format),
+		LastDateFetched: toDate.Format(time.RFC3339),
 	}
 	this.Events = append(this.Events, event)
 	this.Save()

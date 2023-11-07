@@ -72,27 +72,25 @@ func (this *Automation) GetPageUrlObject() url.URL {
 }
 
 func (this *Automation) DownloadFile(
-	filename string,
+	downloadpath string,
 	action func() error,
 ) (string, error) {
 	page := this.Page
 	download, err := page.ExpectDownload(action)
-	AssertErrorToNilf("could not expect download: %w", err)
+	if err == nil {
+		TakeScreenshot(page, downloadpath)
+	}
 
-	downloadedFilename := download.SuggestedFilename()
-	ext := path.Ext(downloadedFilename)
-
-	logrus.Debugln("Suggested filename: ", downloadedFilename)
-	logrus.Debugln("Download ext: ", ext)
+	logrus.Debugln("Target filename: ", downloadpath)
+	targetDir, targetFilename := path.Split(downloadpath)
 
 	storagePath := ResolveFileArg(
-		filename,
+		"",
 		"BANKDOWNLOADER_DOWNLOADDIR",
-		path.Join("downloads", filename),
+		path.Join("downloads", targetDir),
 	)
-	savedFilename := path.Join(storagePath, fmt.Sprintf(
-		"%s.%s", filename, ext,
-	))
+	savedFilename := path.Join(storagePath, targetFilename)
+
 	err = download.SaveAs(savedFilename)
 
 	AssertErrorToNilf("could not save file: %w", err)
@@ -208,17 +206,7 @@ func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool
 	if !HasMatchingElements(locator) {
 		page, err := locator.Page()
 		if err == nil {
-			cwd := GetCwd()
-			if _, err := os.Stat(path.Join(cwd, "screenshots")); os.IsNotExist(err) {
-				os.Mkdir(path.Join(cwd, "screenshots"), 0755)
-			}
-			screenshotPath := path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", slug.Make(itemName)))
-			if _, err := page.Screenshot(playwright.PageScreenshotOptions{
-				Path:     playwright.String(screenshotPath),
-				FullPage: playwright.Bool(true),
-			}); err != nil {
-				logrus.Errorln("Could not take screenshot: ", err)
-			}
+			TakeScreenshot(page, itemName)
 		}
 		logrus.Panic(
 			color.FgRed.Render(fmt.Sprintf("could not find item: %s", itemName)),
@@ -226,6 +214,20 @@ func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool
 		return false
 	}
 	return true
+}
+
+func TakeScreenshot(page playwright.Page, topic string) {
+	cwd := GetCwd()
+	if _, err := os.Stat(path.Join(cwd, "screenshots")); os.IsNotExist(err) {
+		os.Mkdir(path.Join(cwd, "screenshots"), 0755)
+	}
+	screenshotPath := path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", slug.Make(topic)))
+	if _, err := page.Screenshot(playwright.PageScreenshotOptions{
+		Path:     playwright.String(screenshotPath),
+		FullPage: playwright.Bool(true),
+	}); err != nil {
+		logrus.Errorln("Could not take screenshot: ", err)
+	}
 }
 
 // function that prints the inner texts of matching elements

@@ -2,7 +2,7 @@ package store
 
 import (
 	"bytes"
-	"html/template"
+	"text/template"
 	"time"
 
 	"github.com/gosimple/slug"
