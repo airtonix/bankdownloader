@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/airtonix/bankdownloader/compare/v1.1.2...v1.1.3) (2023-11-08)
+
+
+### Bug Fixes
+
+* dont override content permissions ([#11](https://github.com/airtonix/bankdownloader/issues/11)) ([613b385](https://github.com/airtonix/bankdownloader/commit/613b3859f35e608e17a0c55c0a83281d0bde6129))
+
 ## [1.1.2](https://github.com/airtonix/bankdownloader/compare/v1.1.1...v1.1.2) (2023-11-07)
 
 
