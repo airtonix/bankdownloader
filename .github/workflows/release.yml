@@ -6,7 +6,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
-
+  packages: write
+  
 name: Release Management
 
 jobs:
@@ -33,10 +34,6 @@ jobs:
 
     runs-on: ubuntu-22.04
     needs: [Release]
-
-    permissions:
-      contents: read
-      packages: write
 
     env:
       REGISTRY: ghcr.io
