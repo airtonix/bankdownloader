@@ -37,9 +37,9 @@ The config file is located at `~/.bank-downloader/config.yaml` by default.
 
 ```yaml
 ---
-jobs:
-  - source: "anz"
-    format: "AgriBank (CSV)"
+sources:
+  - name: "anz"
+    exportFormat: "AgriBank (CSV)"
     outputTemplate: "mybank-firstuser-{{.Account.NameSlug}}-{{.Account.NumberSlug}}-{{.FromDateUnix}}-{{.ToDateUnix}}.csv"
     daysToFetch: 7
     credentials:
@@ -48,8 +48,8 @@ jobs:
     accounts:
       - name: "My Everyday Cash Account Name"
         number: "123456789"
-  - source: "anz"
-    format: "Agrimaster(CSV)"
+  - name: "anz"
+    exportFormat: "Agrimaster(CSV)"
     outputTemplate: "mybank-seconduser-{{.Account.NameSlug}}-{{.Account.NumberSlug}}-{{.FromDateUnix}}-{{.ToDateUnix}}.csv"
     daysToFetch: 7
     credentials:
@@ -63,15 +63,15 @@ jobs:
         
 ```
 
-#### `jobs`
+#### `sources`
 
-A list of jobs to run.
+Sources where bankdownloader can download transactions from.
 
-#### `jobs[].source`
+#### `source[].name`
 
 The name of the bank to download from. Currently only `anz` is supported.
 
-#### `jobs[].format`
+#### `source[].exportFormat`
 
 The format of the downloaded file. Supported formats depends on the source.
 
@@ -86,7 +86,7 @@ For reference, the ANZ source supports:
 - `Agrimaster(CSV)`
 - `Phoenix Gateway(CSV)`
 
-#### `jobs[].outputTemplate`
+#### `source[].outputTemplate`
 
 The template to use for the output file name.
 
@@ -108,37 +108,31 @@ The following variables are available:
 - `{{.ToDateUnix}}` - the date of the last transaction in the file, in unix time
 - `{{.Now}}` - the current date
 
-#### `jobs[].daysToFetch`
+#### `source[].daysToFetch`
 
 The number of days to fetch. Defaults to `7`.
 
-#### `jobs[].dateRangeMode`
-
-The date range mode to use. Defaults to `days`.
-
-_see [`--date-range-mode`](#--date-range-mode) for more details._
-
-#### `jobs[].credentials`
+#### `source[].credentials`
 
 The credentials to use to log in to the bank.
 
-#### `jobs[].credentials.username`
+#### `source[].credentials.username`
 
 The username to use to log in to the bank.
 
-#### `jobs[].credentials.password`
+#### `source[].credentials.password`
 
 The password to use to log in to the bank.
 
-#### `jobs[].accounts`
+#### `source[].accounts`
 
 A list of accounts to download.
 
-#### `jobs[].accounts[].name`
+#### `source[].accounts[].name`
 
 The name of the account to download.
 
-#### `jobs[].accounts[].number`
+#### `source[].accounts[].number`
 
 The number of the account to download.
 
@@ -180,11 +174,6 @@ The idea here is that with a `daysToFetch` of `60`, you can set up a scheduled t
 - on subsequent runs download transactions from the last 60 days, or since the last downloaded transaction date, whichever is more recent
 
 
-### `bank-downloader list`
-
-Lists all accounts that will be downloaded.
-
-
 ## How it works
 
 `bank-downloader` uses [playwright](https://playwright.dev/) to automate a real browser.
@@ -200,4 +189,5 @@ Lists all accounts that will be downloaded.
 
 ## Contributing
 
-> ⚠️ pull request titles must follow conventional commits
+
+see [CONTRIBUTING.md](CONTRIBUTING.md)
