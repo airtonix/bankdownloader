@@ -186,11 +186,13 @@ func NewHistoryReader() *viper.Viper {
 	reader := viper.New()
 
 	reader.SetConfigName("history")                            // name of config file (without extension)
-	reader.SetConfigType("yaml")                               // REQUIRED if the config file does not have the extension in the name
+	reader.SetConfigType("json")                               // REQUIRED if the config file does not have the extension in the name
 	reader.AddConfigPath(configReader.GetString("configpath")) // call multiple times to add many search paths
 	reader.AddConfigPath(".")
 	reader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	reader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
+
+	reader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/history.json")
 
 	reader.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println("Config file changed:", e.Name)
@@ -216,7 +218,7 @@ func CreateNewHistoryFile() {
 	}
 	historyFilePath := configReader.Get("configpath")
 	if historyFilePath == nil {
-		historyFilePath = fmt.Sprintf("%s/history.yaml", cwd)
+		historyFilePath = fmt.Sprintf("%s/history.json", cwd)
 	}
 
 	// if the file exists, don't overwrite it

@@ -35,6 +35,7 @@ var downloadCmd = &cobra.Command{
 
 			core.KeyValue("source", source.GetName())
 			core.KeyValue("accounts", len(item.Accounts))
+			core.KeyValue("config", item.Config)
 
 			core.Action("\nlogging in...")
 			// 	err = source.Login(automation)
@@ -44,10 +45,12 @@ var downloadCmd = &cobra.Command{
 
 			for _, account := range item.Accounts {
 				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
+				daysToFetch := source.GetDaysToFetch()
+
 				fromDate, toDate, err := history.GetDownloadDateRange(
 					source.GetName(),
 					account.Number,
-					source.GetDaysToFetch(),
+					daysToFetch,
 					strategy,
 				)
 				if err != nil {
@@ -55,7 +58,7 @@ var downloadCmd = &cobra.Command{
 					continue
 				}
 				core.KeyValue("date range",
-					fmt.Sprintf("%v - %v", fromDate, toDate),
+					fmt.Sprintf("%d: %v - %v", daysToFetch, fromDate, toDate),
 				)
 				// 		filename, err := source.DownloadTransactions(
 				// 			account.Name,

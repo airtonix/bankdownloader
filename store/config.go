@@ -47,11 +47,13 @@ func NewConfigReader() *viper.Viper {
 
 	// lower case the name of the config file
 	configReader.SetConfigName("config")                                 // name of config file (without extension)
-	configReader.SetConfigType("yaml")                                   // REQUIRED if the config file does not have the extension in the name
+	configReader.SetConfigType("json")                                   // REQUIRED if the config file does not have the extension in the name
 	configReader.AddConfigPath(configReader.GetString("config"))         // call multiple times to add many search paths
 	configReader.AddConfigPath(".")                                      // optionally look for config in the working directory
 	configReader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
+
+	configReader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/config.json")
 
 	configReader.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println("Config file changed:", e.Name)
@@ -76,7 +78,7 @@ func CreateNewConfigFile() {
 	}
 	configFilePath := configReader.Get("configpath")
 	if configFilePath == nil {
-		configFilePath = fmt.Sprintf("%s/config.yaml", cwd)
+		configFilePath = fmt.Sprintf("%s/config.json", cwd)
 	}
 
 	// if the file exists, don't overwrite it

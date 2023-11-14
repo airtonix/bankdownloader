@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/config.json",
+  "sources": [
+    {
+      "name": "anz",
+      "config": {
+        "credentials": {
+          "username": "myusername",
+          "password": "mypassword"
+        },
+        "daysToFetch":731,
+        "domain": "mybank.com",
+        "format": "csv",
+        "outputTemplate": "mybank-{{.Account}}-{{.From}}-{{.To}}.csv"
+      },
+      "accounts": [
+        {
+          "name": "myaccount",
+          "number": "1234567890"
+        }, {
+          "name": "myotheraccount",
+          "number": "0987654321"
+        }
+      ]
+    }
+  ]
+}

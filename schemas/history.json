@@ -38,6 +38,5 @@
   },
   "required": [
     "events"
-  ],
-  "additionalProperties": false
+  ]
 }

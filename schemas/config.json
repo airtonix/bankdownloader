@@ -101,6 +101,5 @@
   },
   "required": [
     "sources"
-  ],
-  "additionalProperties": false
+  ]
 }
