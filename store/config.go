@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/airtonix/bank-downloaders/core"
@@ -34,7 +35,7 @@ func GetConfig() *Configuration {
 
 var configReader *viper.Viper
 
-func InitConfig() {
+func NewConfigReader() *viper.Viper {
 	configReader = viper.New()
 
 	configReader.SetEnvPrefix(appname)
@@ -52,8 +53,6 @@ func InitConfig() {
 	configReader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
 
-	// core.AssertErrorToNilf("could not unmarshal config: %w", err)
-
 	configReader.OnConfigChange(func(e fsnotify.Event) {
 		fmt.Println("Config file changed:", e.Name)
 	})
@@ -66,7 +65,38 @@ func InitConfig() {
 			// Config file was found but another error was produced
 		}
 	}
-	configReader.Unmarshal(&conf)
-	core.KeyValue("config", configReader.ConfigFileUsed())
-	core.KeyValue("config", conf)
+	return configReader
+}
+
+func CreateNewConfigFile() {
+	// current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	configFilePath := configReader.Get("configpath")
+	if configFilePath == nil {
+		configFilePath = fmt.Sprintf("%s/config.yaml", cwd)
+	}
+
+	// if the file exists, don't overwrite it
+	if _, err := os.Stat(configFilePath.(string)); err == nil {
+		return
+	}
+
+	logrus.Infof("Creating new  config file: %s", configFilePath)
+	if err := configReader.SafeWriteConfigAs(configFilePath.(string)); err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+func InitConfig() {
+	configReader = NewConfigReader()
+	err := configReader.Unmarshal(&conf)
+	core.AssertErrorToNilf("could not unmarshal config: %w", err)
+	logrus.Debugln("config file", configReader.ConfigFileUsed())
+}
+
+func init() {
+	InitConfig()
 }

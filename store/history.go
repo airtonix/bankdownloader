@@ -2,6 +2,7 @@ package store
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
@@ -14,38 +15,6 @@ import (
 	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
 )
-
-var history *viper.Viper
-
-func InitHistory() {
-
-	history = viper.New()
-
-	history.SetConfigName("history")                            // name of config file (without extension)
-	history.SetConfigType("yaml")                               // REQUIRED if the config file does not have the extension in the name
-	history.AddConfigPath(configReader.GetString("configpath")) // call multiple times to add many search paths
-	history.AddConfigPath(".")
-	history.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
-	history.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
-
-	history.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
-	})
-	history.WatchConfig()
-
-	if err := history.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-		} else {
-			// Config file was found but another error was produced
-		}
-	}
-	logrus.Infof("history: %s", history.ConfigFileUsed())
-}
-
-func GetHistory() *viper.Viper {
-	return history
-}
 
 type HistoryEvent struct {
 	Source          string `yaml:"source"`
@@ -203,4 +172,71 @@ func (h *History) Save() error {
 
 	// SaveYamlFile(output, historyFilePath)
 	return nil
+}
+
+var history History
+
+func GetHistory() *History {
+	return &history
+}
+
+var historyReader *viper.Viper
+
+func NewHistoryReader() *viper.Viper {
+	reader := viper.New()
+
+	reader.SetConfigName("history")                            // name of config file (without extension)
+	reader.SetConfigType("yaml")                               // REQUIRED if the config file does not have the extension in the name
+	reader.AddConfigPath(configReader.GetString("configpath")) // call multiple times to add many search paths
+	reader.AddConfigPath(".")
+	reader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
+	reader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
+
+	reader.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+	})
+	reader.WatchConfig()
+
+	if err := reader.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+		} else {
+			// Config file was found but another error was produced
+		}
+	}
+
+	return reader
+}
+
+func CreateNewHistoryFile() {
+	// current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	historyFilePath := configReader.Get("configpath")
+	if historyFilePath == nil {
+		historyFilePath = fmt.Sprintf("%s/history.yaml", cwd)
+	}
+
+	// if the file exists, don't overwrite it
+	if _, err := os.Stat(historyFilePath.(string)); err == nil {
+		return
+	}
+
+	logrus.Infof("Creating new history file: %s", historyFilePath)
+	if err := historyReader.SafeWriteConfigAs(historyFilePath.(string)); err != nil {
+		logrus.Fatal(err)
+	}
+}
+
+func InitHistory() {
+	historyReader = NewHistoryReader()
+	err := historyReader.Unmarshal(&history)
+	core.AssertErrorToNilf("could not unmarshal history: %w", err)
+	logrus.Debugln("history file", historyReader.ConfigFileUsed())
+}
+
+func init() {
+	InitHistory()
 }

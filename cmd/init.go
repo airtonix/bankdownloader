@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/airtonix/bank-downloaders/store"
 	"github.com/playwright-community/playwright-go"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +21,9 @@ var initDmd = &cobra.Command{
 		if core.AssertErrorToNilf("could not install playwright: %w", err) {
 			return
 		}
+
+		store.CreateNewConfigFile()
+		store.CreateNewHistoryFile()
 	},
 }
 

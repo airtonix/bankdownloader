@@ -9,7 +9,6 @@ import (
 	"github.com/gookit/color"
 	"github.com/gosimple/slug"
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/playwright-community/playwright-go"
 	"github.com/yogiis/golang-web-automation/helpers"
@@ -22,7 +21,7 @@ type Automation struct {
 	Page    playwright.Page
 }
 
-func (this *Automation) OpenBrowser() error {
+func (a *Automation) OpenBrowser() error {
 	cwd := GetCwd()
 	downloadsPath := path.Join(cwd, "downloads")
 
@@ -31,38 +30,38 @@ func (this *Automation) OpenBrowser() error {
 	})
 	helpers.LogPanicln(err)
 
-	this.Pw = pw
+	a.Pw = pw
 
 	browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
 		DownloadsPath: &downloadsPath,
 	})
 	helpers.LogPanicln(err)
-	this.Browser = browser
+	a.Browser = browser
 
 	context, err := browser.NewContext()
 	helpers.LogPanicln(err)
-	this.Context = context
+	a.Context = context
 
 	page, err := context.NewPage()
 	helpers.LogPanicln(err)
-	this.Page = page
+	a.Page = page
 
-	log.Info("Opened browser")
+	logrus.Info("Opened browser")
 
 	return nil
 }
 
-func (this *Automation) CloseBrowser() error {
-	err := this.Browser.Close()
+func (a *Automation) CloseBrowser() error {
+	err := a.Browser.Close()
 	helpers.LogPanicln(err)
 
-	log.Info("Closed browser")
+	logrus.Info("Closed browser")
 
 	return nil
 }
 
-func (this *Automation) GetPageUrlObject() url.URL {
-	page := this.Page
+func (a *Automation) GetPageUrlObject() url.URL {
+	page := a.Page
 	obj, err := url.Parse(page.URL())
 	if err != nil {
 		logrus.Errorln("Could not parse url: ", err)
@@ -71,11 +70,11 @@ func (this *Automation) GetPageUrlObject() url.URL {
 	return *obj
 }
 
-func (this *Automation) DownloadFile(
+func (a *Automation) DownloadFile(
 	downloadpath string,
 	action func() error,
 ) (string, error) {
-	page := this.Page
+	page := a.Page
 	download, err := page.ExpectDownload(action)
 	if err == nil {
 		TakeScreenshot(page, downloadpath)
@@ -98,8 +97,8 @@ func (this *Automation) DownloadFile(
 	return savedFilename, nil
 }
 
-func (this *Automation) PickElements(selector string) (playwright.Locator, error) {
-	page := this.Page
+func (a *Automation) PickElements(selector string) (playwright.Locator, error) {
+	page := a.Page
 
 	locator := page.Locator(selector)
 	locator.WaitFor(playwright.LocatorWaitForOptions{
@@ -110,8 +109,8 @@ func (this *Automation) PickElements(selector string) (playwright.Locator, error
 	}
 	return locator, nil
 }
-func (this *Automation) Find(selector string) error {
-	locator, err := this.PickElements(selector)
+func (a *Automation) Find(selector string) error {
+	locator, err := a.PickElements(selector)
 	if err != nil {
 		return err
 	}
@@ -123,8 +122,8 @@ func (this *Automation) Find(selector string) error {
 	)
 	return nil
 }
-func (this *Automation) Click(selector string) error {
-	locator, err := this.PickElements(selector)
+func (a *Automation) Click(selector string) error {
+	locator, err := a.PickElements(selector)
 	if err != nil {
 		return err
 	}
@@ -136,8 +135,8 @@ func (this *Automation) Click(selector string) error {
 	)
 	return nil
 }
-func (this *Automation) Focus(selector string) error {
-	locator, err := this.PickElements(selector)
+func (a *Automation) Focus(selector string) error {
+	locator, err := a.PickElements(selector)
 	if err != nil {
 		return err
 	}
@@ -149,8 +148,8 @@ func (this *Automation) Focus(selector string) error {
 	)
 	return nil
 }
-func (this *Automation) Fill(selector string, value string) error {
-	locator, err := this.PickElements(selector)
+func (a *Automation) Fill(selector string, value string) error {
+	locator, err := a.PickElements(selector)
 	if err != nil {
 		return err
 	}
@@ -163,14 +162,17 @@ func (this *Automation) Fill(selector string, value string) error {
 	)
 	return nil
 }
-func (this *Automation) FillSensitive(selector string, value string) error {
-	locator, err := this.PickElements(selector)
+func (a *Automation) FillSensitive(selector string, value string) error {
+	locator, err := a.PickElements(selector)
 	if err != nil {
 		return err
 	}
 	element := locator.First()
 	element.Fill(value)
 	typedValue, err := element.InputValue()
+	if err != nil {
+		return err
+	}
 	logrus.Debugf(
 		"[FilledSensitive] %s > %t \n",
 		selector,
@@ -187,7 +189,7 @@ func NewAutomation() *Automation {
 func CountOfElements(locator playwright.Locator) int {
 	count, err := locator.Count()
 	if err != nil {
-		log.Errorln("Could not get count of elements: ", err)
+		logrus.Errorln("Could not get count of elements: ", err)
 		return 0
 	}
 
@@ -196,10 +198,7 @@ func CountOfElements(locator playwright.Locator) int {
 
 func HasMatchingElements(locator playwright.Locator) bool {
 	count := CountOfElements(locator)
-	if count > 0 {
-		return true
-	}
-	return false
+	return count > 0
 }
 
 func AssertHasMatchingElements(locator playwright.Locator, itemName string) bool {
@@ -234,7 +233,7 @@ func TakeScreenshot(page playwright.Page, topic string) {
 func PrintMatchingElements(locator playwright.Locator) string {
 	elements, err := locator.AllInnerTexts()
 	if err != nil {
-		log.Errorln("Could not get elements: ", err)
+		logrus.Errorln("Could not get elements: ", err)
 		return ""
 	}
 	return JoinStrings(elements)
@@ -244,14 +243,14 @@ func PrintMatchingElements(locator playwright.Locator) string {
 func PrintMatchingInputValues(locator playwright.Locator) string {
 	elements, err := locator.All()
 	if err != nil {
-		log.Errorln("Could not get elements: ", err)
+		logrus.Errorln("Could not get elements: ", err)
 		return ""
 	}
 	var values []string
 	for _, element := range elements {
 		value, err := element.InputValue()
 		if err != nil {
-			log.Errorln("Could not get input value: ", err)
+			logrus.Errorln("Could not get input value: ", err)
 			return ""
 		}
 		values = append(values, value)

@@ -12,7 +12,7 @@ download bank transactions.
 
 ## Getting Started
 
-1. create a example config `bank-downloader init`
+1. create a example config and download the playwright patched browsers with `bank-downloader init`
 2. edit the config file
 3. run `bank-downloader download`
 

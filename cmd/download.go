@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/processors"
 	"github.com/airtonix/bank-downloaders/store"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -11,7 +14,7 @@ var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "dwnloads transactions from a source",
 	Run: func(cmd *cobra.Command, args []string) {
-		// history := conf.GetHistory()
+		history := store.GetHistory()
 		config := store.GetConfig()
 
 		automation := core.NewAutomation()
@@ -39,43 +42,45 @@ var downloadCmd = &cobra.Command{
 			// 		continue
 			// 	}
 
-			// 	for _, account := range item.Accounts {
-			// 		logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
-			// 		fromDate, toDate, err := history.GetDownloadDateRange(
-			// 			source.GetName(),
-			// 			account.Number,
-			// 			source.GetDaysToFetch(),
-			// 			strategy,
-			// 		)
-			// 		if err != nil {
-			// 			logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
-			// 			continue
-			// 		}
+			for _, account := range item.Accounts {
+				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
+				fromDate, toDate, err := history.GetDownloadDateRange(
+					source.GetName(),
+					account.Number,
+					source.GetDaysToFetch(),
+					strategy,
+				)
+				if err != nil {
+					logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
+					continue
+				}
+				core.KeyValue("date range",
+					fmt.Sprintf("%v - %v", fromDate, toDate),
+				)
+				// 		filename, err := source.DownloadTransactions(
+				// 			account.Name,
+				// 			account.Number,
+				// 			fromDate,
+				// 			toDate,
+				// 			automation,
+				// 		)
 
-			// 		filename, err := source.DownloadTransactions(
-			// 			account.Name,
-			// 			account.Number,
-			// 			fromDate,
-			// 			toDate,
-			// 			automation,
-			// 		)
+				// 		if core.AssertErrorToNilf("could not download transactions: %w", err) {
+				// 			continue
+				// 		}
 
-			// 		if core.AssertErrorToNilf("could not download transactions: %w", err) {
-			// 			continue
-			// 		}
-
-			// 		logrus.Infoln(
-			// 			fmt.Sprintf(
-			// 				"Downloaded transactions for %s from %s to %s as %s",
-			// 				account.Name, fromDate, toDate, filename,
-			// 			),
-			// 		)
-			// 		history.SaveEvent(
-			// 			source.GetName(),
-			// 			account.Number,
-			// 			toDate,
-			// 		)
-			// 	}
+				// 		logrus.Infoln(
+				// 			fmt.Sprintf(
+				// 				"Downloaded transactions for %s from %s to %s as %s",
+				// 				account.Name, fromDate, toDate, filename,
+				// 			),
+				// 		)
+				// 		history.SaveEvent(
+				// 			source.GetName(),
+				// 			account.Number,
+				// 			toDate,
+				// 		)
+			}
 		}
 	},
 }
