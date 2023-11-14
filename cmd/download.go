@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/processors"
 	"github.com/airtonix/bank-downloaders/store"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -14,14 +11,17 @@ var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: "dwnloads transactions from a source",
 	Run: func(cmd *cobra.Command, args []string) {
-		history := store.GetHistory()
+		// history := conf.GetHistory()
+		config := store.GetConfig()
+
 		automation := core.NewAutomation()
-		core.Header("Downloading Sources")
 		automation.OpenBrowser()
 		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
-		logrus.Infof("strategy: %s", strategy.ToString())
+		core.KeyValue("strategy", strategy.ToString())
 
-		for _, item := range store.GetConfigSources() {
+		core.Header("Downloading Transactions")
+
+		for _, item := range config.Sources {
 			source, err := processors.GetProcecssorFactory(
 				item.Name,
 				item.Config.(map[string]interface{}),
@@ -30,48 +30,52 @@ var downloadCmd = &cobra.Command{
 				continue
 			}
 
-			err = source.Login(automation)
-			if core.AssertErrorToNilf("could not login: %w", err) {
-				continue
-			}
+			core.KeyValue("source", source.GetName())
+			core.KeyValue("accounts", len(item.Accounts))
 
-			for _, account := range item.Accounts {
-				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
-				fromDate, toDate, err := history.GetDownloadDateRange(
-					source.GetName(),
-					account.Number,
-					source.GetDaysToFetch(),
-					strategy,
-				)
-				if err != nil {
-					logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
-					continue
-				}
+			core.Action("\nlogging in...")
+			// 	err = source.Login(automation)
+			// 	if core.AssertErrorToNilf("could not login: %w", err) {
+			// 		continue
+			// 	}
 
-				filename, err := source.DownloadTransactions(
-					account.Name,
-					account.Number,
-					fromDate,
-					toDate,
-					automation,
-				)
+			// 	for _, account := range item.Accounts {
+			// 		logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
+			// 		fromDate, toDate, err := history.GetDownloadDateRange(
+			// 			source.GetName(),
+			// 			account.Number,
+			// 			source.GetDaysToFetch(),
+			// 			strategy,
+			// 		)
+			// 		if err != nil {
+			// 			logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
+			// 			continue
+			// 		}
 
-				if core.AssertErrorToNilf("could not download transactions: %w", err) {
-					continue
-				}
+			// 		filename, err := source.DownloadTransactions(
+			// 			account.Name,
+			// 			account.Number,
+			// 			fromDate,
+			// 			toDate,
+			// 			automation,
+			// 		)
 
-				logrus.Infoln(
-					fmt.Sprintf(
-						"Downloaded transactions for %s from %s to %s as %s",
-						account.Name, fromDate, toDate, filename,
-					),
-				)
-				history.SaveEvent(
-					source.GetName(),
-					account.Number,
-					toDate,
-				)
-			}
+			// 		if core.AssertErrorToNilf("could not download transactions: %w", err) {
+			// 			continue
+			// 		}
+
+			// 		logrus.Infoln(
+			// 			fmt.Sprintf(
+			// 				"Downloaded transactions for %s from %s to %s as %s",
+			// 				account.Name, fromDate, toDate, filename,
+			// 			),
+			// 		)
+			// 		history.SaveEvent(
+			// 			source.GetName(),
+			// 			account.Number,
+			// 			toDate,
+			// 		)
+			// 	}
 		}
 	},
 }

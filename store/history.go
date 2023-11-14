@@ -1,17 +1,51 @@
 package store
 
 import (
+	"fmt"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+
 	"errors"
 	"sort"
 	"time"
 
 	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
-	"github.com/airtonix/bank-downloaders/schemas"
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
+
+var history *viper.Viper
+
+func InitHistory() {
+
+	history = viper.New()
+
+	history.SetConfigName("history")                            // name of config file (without extension)
+	history.SetConfigType("yaml")                               // REQUIRED if the config file does not have the extension in the name
+	history.AddConfigPath(configReader.GetString("configpath")) // call multiple times to add many search paths
+	history.AddConfigPath(".")
+	history.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
+	history.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
+
+	history.OnConfigChange(func(e fsnotify.Event) {
+		fmt.Println("Config file changed:", e.Name)
+	})
+	history.WatchConfig()
+
+	if err := history.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+		} else {
+			// Config file was found but another error was produced
+		}
+	}
+	logrus.Infof("history: %s", history.ConfigFileUsed())
+}
+
+func GetHistory() *viper.Viper {
+	return history
+}
 
 type HistoryEvent struct {
 	Source          string `yaml:"source"`
@@ -67,46 +101,6 @@ func (h *History) GetLatestEvent(
 	return event, nil
 }
 
-type HistoryStrategy interface {
-	Strategy() strategy
-	ToString() string
-}
-
-const (
-	DaysAgo strategy = iota
-	SinceLastDownload
-)
-
-type strategy int
-
-// confirm that strategy implements HistoryStrategy
-var _ HistoryStrategy = strategy(0)
-
-func (h strategy) Strategy() strategy {
-	return h
-}
-func (h strategy) ToString() string {
-	switch h {
-	case DaysAgo:
-		return "days-ago"
-	case SinceLastDownload:
-		return "since-last-download"
-	default:
-		return "days-ago"
-	}
-}
-
-func NewHistoryStrategy(input string) strategy {
-	switch input {
-	case "days-ago":
-		return DaysAgo
-	case "since-last-download":
-		return SinceLastDownload
-	default:
-		return DaysAgo
-	}
-}
-
 // Calculate the next timeframe to download transactions for.
 //
 // Returns a tuple of `from` and `to` dates.
@@ -128,12 +122,11 @@ func (h *History) GetDownloadDateRange(
 	daysToFetch int,
 	strategy HistoryStrategy,
 ) (time.Time, time.Time, error) {
-	var fromDate time.Time
-	var toDate time.Time
+	toDate := core.GetTodayMinusDays(1)
+	fromDate := core.GetDaysAgo(toDate, daysToFetch)
 
 	// Strategy: DaysAgo
 	if strategy.Strategy() == DaysAgo {
-		fromDate, toDate = h.GetDaysAgo(daysToFetch)
 		return fromDate, toDate, nil
 	}
 
@@ -148,7 +141,6 @@ func (h *History) GetDownloadDateRange(
 		// if there's no event, use the default
 		if err != nil {
 			logrus.Debugln("No events found, using default")
-			fromDate, toDate = h.GetDaysAgo(daysToFetch)
 			return fromDate, toDate, nil
 		}
 
@@ -174,26 +166,18 @@ func (h *History) GetDownloadDateRange(
 	return fromDate, toDate, errors.New("Unable to calculate next date range")
 }
 
-func (this *History) GetDaysAgo(
-	daysToFetch int,
-) (time.Time, time.Time) {
-	toDate := core.GetTodayMinusDays(1)
-	fromDate := core.GetTodayMinusDays(daysToFetch)
-	return fromDate, toDate
-}
-
 // save the event
-func (this *History) SaveEvent(source string, accountNo string, toDate time.Time) {
+func (h *History) SaveEvent(source string, accountNo string, toDate time.Time) {
 	event := HistoryEvent{
 		Source:          source,
 		AccountNumber:   accountNo,
 		LastDateFetched: toDate.Format(time.RFC3339),
 	}
-	this.Events = append(this.Events, event)
-	this.Save()
+	h.Events = append(h.Events, event)
+	h.Save()
 }
 
-func (this *History) Save() error {
+func (h *History) Save() error {
 	var output History
 	var err error
 
@@ -210,95 +194,13 @@ func (this *History) Save() error {
 
 	err = mergo.Merge(
 		&output,
-		this,
+		h,
 		mergo.WithOverrideEmptySlice,
 	)
 	if core.AssertErrorToNilf("Problem preparing history to save: %w", err) {
 		return err
 	}
 
-	SaveYamlFile(output, historyFilePath)
+	// SaveYamlFile(output, historyFilePath)
 	return nil
-}
-
-// History Singleton
-var history History
-var historyFilePath string
-var defaultHistory = History{}
-var defaultHistoryTree = &yaml.Node{
-	Kind: yaml.DocumentNode,
-	Content: []*yaml.Node{
-		{
-			Kind: yaml.MappingNode,
-			Content: []*yaml.Node{
-				{
-					Kind:        yaml.ScalarNode,
-					Value:       "events",
-					HeadComment: "# yaml-language-server: $schema=https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/history.json",
-				},
-				{
-					Kind:    yaml.SequenceNode,
-					Content: []*yaml.Node{},
-				},
-			},
-		},
-	},
-}
-
-func NewHistory(filepathArg string) (History, error) {
-	filename := "history.yaml"
-	filepath := core.ResolveFileArg(
-		filepathArg,
-		"BANKDOWNLOADER_HISTORY",
-		filename,
-	)
-
-	err := mergo.Merge(
-		&history,
-		defaultHistory,
-		mergo.WithOverrideEmptySlice)
-
-	if core.AssertErrorToNilf("could not ensure default history values: %w", err) {
-		return history, err
-	}
-
-	if !core.FileExists(filepath) {
-		CreateDefaultHistory(filepath)
-	}
-
-	var historyObject History
-	err = LoadYamlFile[History](
-		filepath,
-		schemas.GetHistorySchema(),
-		&historyObject,
-	)
-	if core.AssertErrorToNilf("could not load history file: %w", err) {
-		return history, err
-	}
-	log.Info("history ready: ", filepath)
-
-	// store the history as a singleton
-	history = historyObject
-	historyFilePath = filepath
-
-	// also return it
-	return history, nil
-}
-
-func CreateDefaultHistory(historyFilePath string) History {
-	var defaultHistory History
-
-	log.Info("creating default config: ", configFilePath)
-
-	content, err := yaml.Marshal(defaultHistoryTree)
-	WriteFile(historyFilePath, content)
-
-	if core.AssertErrorToNilf("could not marshal default history: %w", err) {
-		return defaultHistory
-	}
-	return defaultHistory
-}
-
-func GetHistory() History {
-	return history
 }

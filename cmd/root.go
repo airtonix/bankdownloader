@@ -10,7 +10,6 @@ import (
 	"github.com/airtonix/bank-downloaders/meta"
 	"github.com/airtonix/bank-downloaders/store"
 	log "github.com/sirupsen/logrus"
-	"github.com/snowzach/rotatefilehook"
 	"github.com/spf13/cobra"
 )
 
@@ -48,8 +47,8 @@ func Execute() {
 
 func Initialize() {
 	InitLogger(nil)
-	store.NewConfig(configFileArg)
-	store.NewHistory(historyFileArg)
+	store.InitConfig()
+	store.InitHistory()
 }
 
 func InitLogger(hook log.Hook) {
@@ -69,22 +68,22 @@ func InitLogger(hook log.Hook) {
 		}
 	}
 
-	if os.Getenv(disableLogEnvVarName) != "true" {
-		p, err := store.EnsureLogFilePath()
-		if err == nil {
-			rotateFileHook, err := rotatefilehook.NewRotateFileHook(rotatefilehook.RotateFileConfig{
-				Filename:   p,
-				MaxSize:    50,
-				MaxBackups: 7,
-				MaxAge:     30,
-				Level:      log.InfoLevel,
-				Formatter:  &log.JSONFormatter{},
-			})
-			if err == nil {
-				log.AddHook(rotateFileHook)
-			}
-		}
-	}
+	// if os.Getenv(disableLogEnvVarName) != "true" {
+	// 	p, err := store.EnsureLogFilePath()
+	// 	if err == nil {
+	// 		rotateFileHook, err := rotatefilehook.NewRotateFileHook(rotatefilehook.RotateFileConfig{
+	// 			Filename:   p,
+	// 			MaxSize:    50,
+	// 			MaxBackups: 7,
+	// 			MaxAge:     30,
+	// 			Level:      log.InfoLevel,
+	// 			Formatter:  &log.JSONFormatter{},
+	// 		})
+	// 		if err == nil {
+	// 			log.AddHook(rotateFileHook)
+	// 		}
+	// 	}
+	// }
 	if debugFlag {
 		log.SetLevel(log.DebugLevel)
 	}
