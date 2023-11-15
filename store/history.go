@@ -16,23 +16,23 @@ import (
 )
 
 type HistoryEvent struct {
-	Source          string `yaml:"source"`
-	LastDateFetched string `yaml:"lastDateFetched"`
-	AccountNumber   string `yaml:"accountNumber"`
+	Source          SourceType
+	LastDateFetched string
+	AccountNumber   string
 }
 
 type History struct {
-	Events []HistoryEvent `yaml:"events"`
+	Events []HistoryEvent
 }
 
 func (h *History) GetEvents(
-	source string,
+	sourceType SourceType,
 	accountNo string,
 ) []HistoryEvent {
 	events := []HistoryEvent{}
 
 	for _, event := range h.Events {
-		if event.Source == source && event.AccountNumber == accountNo {
+		if event.Source == sourceType && event.AccountNumber == accountNo {
 
 			// push event onto events
 			events = append(events, event)
@@ -42,12 +42,12 @@ func (h *History) GetEvents(
 }
 
 func (h *History) GetLatestEvent(
-	source string,
+	sourceType SourceType,
 	accountNo string,
 ) (HistoryEvent, error) {
 
 	events := h.GetEvents(
-		source,
+		sourceType,
 		accountNo,
 	)
 
@@ -85,7 +85,7 @@ func (h *History) GetLatestEvent(
 //     If `lastDateFetched` is not available, it will default to `days-ago`.
 //     If `lastDateFetched` plus `daysToFetch` is beyond yesterday, it will default to yeserday.
 func (h *History) GetDownloadDateRange(
-	source string,
+	sourceType SourceType,
 	accountNo string,
 	daysToFetch int,
 	strategy HistoryStrategy,
@@ -102,7 +102,7 @@ func (h *History) GetDownloadDateRange(
 	if strategy.Strategy() == SinceLastDownload {
 		// try to detect a previously recorded event
 		event, err := h.GetLatestEvent(
-			source,
+			sourceType,
 			accountNo,
 		)
 
@@ -135,9 +135,13 @@ func (h *History) GetDownloadDateRange(
 }
 
 // save the event
-func (h *History) SaveEvent(source string, accountNo string, toDate time.Time) {
+func (h *History) SaveEvent(
+	sourceType SourceType,
+	accountNo string,
+	toDate time.Time,
+) {
 	event := HistoryEvent{
-		Source:          source,
+		Source:          sourceType,
 		AccountNumber:   accountNo,
 		LastDateFetched: toDate.Format(time.RFC3339),
 	}

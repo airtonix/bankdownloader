@@ -1,0 +1,367 @@
+{
+  "title": "Bank Downloader",
+  "description": "Bank Downloader configuration",
+  "type": "object",
+  "properties": {
+    "sources": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "$ref": "#/$defs/source-selector"
+      }
+    }
+  },
+  "required": [
+    "sources"
+  ],
+  "$defs": {
+
+    "generic-source-account": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "name of the account",
+          "minLength": 1
+        },
+        "number": {
+          "type": "string",
+          "description": "account number",
+          "minLength": 1
+        },
+        "outputTemplate": {
+          "type": "string",
+          "description": "For this account, the filename template to use when generating the output file",
+          "minLength": 1
+        },
+        "exportFormat": {
+          "type": "string",
+          "description": "For this account, which format should be selected to download",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "number"
+      ]
+    },
+
+    "generic-source-config": {
+      "type": "object",
+      "description": "configuration for the downloader",
+      "minLength": 1,
+      "properties": {
+        "exportFormat": {
+          "type": "string",
+          "description": "Which format should be selected to download",
+          "minLength": 1
+        },
+        "daysToFetch": {
+          "type": "integer",
+          "description": "number of days to fetch",
+          "minimum": 1
+        },
+        "historyStrategy": {
+          "type": "string",
+          "description": "strategy to use when downloading history",
+          "enum": [
+            "days-ago",
+            "since-last-event"
+          ]
+        },
+        "domain": {
+          "type": "string",
+          "description": "domain to use when downloading",
+          "minLength": 1
+        },
+        "outputTemplate": {
+          "type": "string",
+          "description": "template to use when generating the output file",
+          "minLength": 1
+        },
+        "credentials": {
+          "$ref": "#/$defs/credentials-selector"
+        }
+      }
+    },
+
+    "source-selector": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "name of the downloader to use",
+          "enum": [
+            "anz"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "oneOf": [
+        {
+          "properties": { "type": { "const": "anz" }},
+          "allOf": [{"$ref": "#/$defs/anz-source"}]
+        }
+      ]
+    },
+
+    "anz-source": {
+      "type": "object",
+      "description": "configuration for the anz downloader",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "anz"
+        },
+        "accounts": {
+          "type": "array",
+          "description": "anz accounts to download",
+          "items": {
+            "$ref": "#/$defs/generic-source-account"
+          }
+        },
+        "config": {
+          "$ref": "#/$defs/anz-source-config"
+        }
+      },
+      "required": [
+        "type",
+        "config",
+        "accounts"
+      ],
+      "additionalProperties": false
+    },
+    "anz-source-config": {
+      "$ref": "#/$defs/generic-source-config"
+    },
+
+    "credentials-selector": {
+      "type": "object",
+      "description": "credentials to use when downloading",
+      "properties": {
+        "type": {
+          "description": "type of credentials to use",
+          "enum": [
+            "file",
+            "env",
+            "gopass",
+            "keychain",
+            "env-totp",
+            "gopass-totp",
+            "keychain-totp"
+          ]
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "oneOf": [
+        {
+          "properties": { "type": { "const": "file" }},
+          "allOf": [{"$ref": "#/$defs/credentials-file"}]
+        },
+        {
+          "properties": { "type": { "const": "env" }},
+          "allOf": [{"$ref": "#/$defs/credentials-env"}]
+        },
+        {
+          "properties": { "type": { "const": "gopass" }},
+          "allOf": [{"$ref": "#/$defs/credentials-gopass"}]
+        },
+        {
+          "properties": { "type": { "const": "keychain" }},
+          "allOf": [{"$ref": "#/$defs/credentials-keychain"}]
+        },
+        {
+          "properties": { "type": { "const": "env-totp" }},
+          "allOf": [{"$ref": "#/$defs/credentials-env-totp"}]
+        },
+        {
+          "properties": { "type": { "const": "gopass-totp" }},
+          "allOf": [{"$ref": "#/$defs/credentials-gopass-totp"}]
+        },
+        {
+          "properties": { "type": { "const": "keychain-totp" }},
+          "allOf": [{"$ref": "#/$defs/credentials-keychain-totp"}]
+        }
+      ]
+    },
+    "credentials-file": {
+      "type": "object",
+      "description": "credentials that are baked into the configuration file",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "file"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 1
+        },
+        "password": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "username",
+        "password"
+      ],
+      "additionalProperties": false
+    },
+    "credentials-env": {
+      "type": "object",
+      "description": "credentials that are read from the environment",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "env"
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "usernameKey",
+        "passwordKey"
+      ]
+    },
+    "credentials-gopass": {
+      "type": "object",
+      "description": "credentials that are read from gopass",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "gopass"
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "usernameKey",
+        "passwordKey"
+      ]
+    },
+    "credentials-keychain": {
+      "type": "object",
+      "description": "credentials that are read from the keychain",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "keychain"
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "usernameKey",
+        "passwordKey"
+      ]
+    },
+    "credentials-env-totp": {
+      "type": "object",
+      "description": "credentials that are read from the environment",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "env-totp"
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "totpKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "usernameKey",
+        "passwordKey",
+        "totpKey"
+      ]
+    },
+    "credentials-gopass-totp": {
+      "type": "object",
+      "description": "credentials that are read from gopass",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "gopass-totp"
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "totpKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "usernameKey",
+        "passwordKey",
+        "totpKey"
+      ]
+    },
+    "credentials-keychain-totp": {
+      "type": "object",
+      "description": "credentials that are read from the keychain",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "keychain-totp"
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "totpKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "usernameKey",
+        "passwordKey",
+        "totpKey"
+      ]
+    }
+  }
+}

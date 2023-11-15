@@ -51,14 +51,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: OS Deps
-        uses: ./.github/actions/setup-os
-      
-      # Just let ASDF do its thing. It's far easier and more reliable than trying to do it ourselves.
-      - name: Tooling
-        uses: ./.github/actions/setup-tooling
-        with:
-          SetupCommand: ./setup.sh
+      - name: setup jetpack devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
 
       - name: Format
-        run: just lint
+        run: devbox run -- just lint

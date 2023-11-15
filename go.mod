@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/playwright-community/playwright-go v0.3900.1
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )
@@ -15,7 +16,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect

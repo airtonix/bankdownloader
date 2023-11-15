@@ -10,8 +10,8 @@ import (
 )
 
 type AnzProcessor struct {
-	Credentials UsernameAndPassword
-	ProcessorConfig
+	Credentials store.UsernameAndPassword
+	store.SourceConfig
 	Processor
 	Automation *core.Automation
 }
@@ -28,7 +28,7 @@ func (processor *AnzProcessor) Login() error {
 
 	url := fmt.Sprintf(
 		"%s/internetbanking",
-		processor.ProcessorConfig,
+		processor.SourceConfig.Domain,
 	)
 	logrus.Info("logging into ", url)
 
@@ -80,7 +80,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 	page := automation.Page
 	dateFormat := "02/01/2006"
 
-	var format = processor.ProcessorConfig.ExportFormat
+	var format = processor.SourceConfig.ExportFormat
 	fromDateString := fromDate.Format(dateFormat)
 	toDateString := toDate.Format(dateFormat)
 
@@ -160,7 +160,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 		toDate,
 	)
 
-	filenameTemplate := store.NewFilenameTemplate(processor.ProcessorConfig.OutputTemplate)
+	filenameTemplate := store.NewFilenameTemplate(processor.OutputTemplate)
 
 	// click the download button
 	filename, err := automation.DownloadFile(
@@ -176,8 +176,8 @@ func (processor *AnzProcessor) DownloadTransactions(
 }
 
 func NewAnzProcessor(
-	processorConfig ProcessorConfig,
-	credentials UsernameAndPassword,
+	config store.SourceConfig,
+	credentials store.UsernameAndPassword,
 	automation *core.Automation,
 ) *AnzProcessor {
 	processor := Processor{
@@ -185,10 +185,10 @@ func NewAnzProcessor(
 	}
 
 	return &AnzProcessor{
-		Processor:       processor,
-		ProcessorConfig: processorConfig,
-		Automation:      automation,
-		Credentials:     credentials,
+		Processor:    processor,
+		SourceConfig: config,
+		Automation:   automation,
+		Credentials:  credentials,
 	}
 }
 

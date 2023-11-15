@@ -25,17 +25,13 @@ var downloadCmd = &cobra.Command{
 		core.Header("Downloading Transactions")
 
 		for _, item := range config.Sources {
-			credentials := processors.NewCredentials(
-				item.Config.(map[string]interface{}),
-			)
-
-			processorConfig := processors.NewProcessorConfig(
-				item.Config.(map[string]interface{}),
+			credentials := store.NewCredentials(
+				item.Config.Credentials,
 			)
 
 			source, err := processors.GetProcecssorFactory(
-				item.Name,
-				processorConfig,
+				item.Type,
+				item.Config,
 				credentials,
 				automation,
 			)
@@ -43,7 +39,7 @@ var downloadCmd = &cobra.Command{
 				continue
 			}
 
-			core.KeyValue("source", item.Name)
+			core.KeyValue("source", item.Type)
 			core.KeyValue("accounts", len(item.Accounts))
 
 			core.Action("\nlogging in...")
@@ -54,10 +50,10 @@ var downloadCmd = &cobra.Command{
 
 			for _, account := range item.Accounts {
 				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
-				daysToFetch := processorConfig.DaysToFetch
+				daysToFetch := item.Config.DaysToFetch
 
 				fromDate, toDate, err := history.GetDownloadDateRange(
-					item.Name,
+					item.Type,
 					account.Number,
 					daysToFetch,
 					strategy,
@@ -87,7 +83,7 @@ var downloadCmd = &cobra.Command{
 					),
 				)
 				history.SaveEvent(
-					item.Name,
+					item.Type,
 					account.Number,
 					toDate,
 				)

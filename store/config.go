@@ -11,14 +11,30 @@ import (
 )
 
 type Account struct {
-	Name   string
-	Number string
+	Name           string
+	Number         string
+	OutputTemplate string `mapstructure:",omitempty"`
+	Format         string `mapstructure:",omitempty"`
 }
 
+type SourceConfig struct {
+	Domain         string
+	ExportFormat   string
+	OutputTemplate string
+	DaysToFetch    int
+	Credentials    map[string]interface{}
+}
+
+type SourceType string
+
+var (
+	AnzSourceType SourceType = "anz"
+)
+
 type Source struct {
-	Name     string    `mapstructure:"name"`
-	Accounts []Account `mapstructure:"accounts"`
-	Config   any       `mapstructure:"config"`
+	Type     SourceType
+	Accounts []Account
+	Config   SourceConfig
 }
 
 type Configuration struct {
@@ -52,7 +68,7 @@ func NewConfigReader() *viper.Viper {
 	configReader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
 
-	configReader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/config.json")
+	configReader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/store/config-schema.json")
 
 	if err := configReader.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -89,6 +105,7 @@ func CreateNewConfigFile() {
 func InitConfig() {
 	configReader = NewConfigReader()
 	err := configReader.Unmarshal(&conf)
+
 	core.AssertErrorToNilf("could not unmarshal config: %w", err)
 	logrus.Debugln("config file", configReader.ConfigFileUsed())
 }

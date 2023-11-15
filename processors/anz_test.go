@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/airtonix/bank-downloaders/store"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,21 +49,23 @@ func TestAnzSourceLogin(t *testing.T) {
 
 	automation := &core.Automation{}
 
-	source := NewAnzProcessor(&AnzConfig{
-		ProcessorConfig: &ProcessorConfig{
-			Domain: s.URL,
-		},
-		Credentials: &AnzCredentials{
-			Username: "username",
-			Password: "password",
-		},
-	})
+	sourceConfig := store.SourceConfig{
+		Domain:         s.URL,
+		ExportFormat:   "csv",
+		OutputTemplate: "{{.AccountName}}-{{.AccountNumber}}.csv",
+		DaysToFetch:    30,
+	}
+	credentials := store.UsernameAndPassword{
+		Username: "username",
+		Password: "password",
+	}
+	source := NewAnzProcessor(sourceConfig, credentials, automation)
 
 	t.Log("Created source")
 
 	automation.OpenBrowser()
 
-	err = source.Login(automation)
+	err = source.Login()
 
 	assert.NoError(t, err, "error")
 }
@@ -135,15 +138,18 @@ func TestAnzSourceDownload(t *testing.T) {
 
 	automation := &core.Automation{}
 
-	source := NewAnzProcessor(&AnzConfig{
-		&AnzCredentials{
-			Username: "username",
-			Password: "password",
-		},
-		&ProcessorConfig{
-			Domain: s.URL,
-		},
-	})
+	sourceConfig := store.SourceConfig{
+		Domain:         s.URL,
+		ExportFormat:   "csv",
+		OutputTemplate: "{{.AccountName}}-{{.AccountNumber}}.csv",
+		DaysToFetch:    30,
+	}
+	credentials := store.UsernameAndPassword{
+		Username: "username",
+		Password: "password",
+	}
+	source := NewAnzProcessor(sourceConfig, credentials, automation)
+
 	t.Log("Created source")
 
 	err = automation.OpenBrowser()
@@ -156,7 +162,6 @@ func TestAnzSourceDownload(t *testing.T) {
 		"123456789",
 		time.Now().Add(-time.Hour*24*30),
 		time.Now(),
-		automation,
 	)
 
 	assert.NoError(t, err, "couldn't download transactions")

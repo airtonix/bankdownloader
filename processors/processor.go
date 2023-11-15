@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/airtonix/bank-downloaders/store"
 )
 
 type IProcessor interface {
@@ -21,16 +22,16 @@ type IProcessor interface {
 }
 
 func GetProcecssorFactory(
-	processorName string,
-	config ProcessorConfig,
-	credentials Credentials,
+	processorName store.SourceType,
+	config store.SourceConfig,
+	credentials store.Credentials,
 	automation *core.Automation,
 ) (IProcessor, error) {
 	var processor IProcessor
 	var err error
 
 	switch processorName {
-	case "anz":
+	case store.AnzSourceType:
 		processor = NewAnzProcessor(
 			config,
 			credentials.UsernameAndPassword,
@@ -61,35 +62,4 @@ type Processor struct {
 
 func (processor *Processor) GetName() string {
 	return processor.Name
-}
-
-type ProcessorConfig struct {
-	Domain         string `json:"domain" yaml:"domain"`                 // the domain of the source
-	ExportFormat   string `json:"exportFormat" yaml:"exportFormat"`     // the format to export the transactions in
-	OutputTemplate string `json:"outputTemplate" yaml:"outputTemplate"` // the template to use for the output filename
-	DaysToFetch    int    `json:"daysToFetch" yaml:"daysToFetch"`       // the number of days to fetch transactions for
-}
-
-func NewProcessorConfig(config map[string]interface{}) ProcessorConfig {
-
-	var processorConfig ProcessorConfig
-
-	// pull the values from config and test they exist before casting them
-	if config["daysToFetch"] != nil {
-		processorConfig.DaysToFetch = config["daysToFetch"].(int)
-	}
-
-	if config["exportFormat"] != nil {
-		processorConfig.ExportFormat = config["exportFormat"].(string)
-	}
-
-	if config["domain"] != nil {
-		processorConfig.Domain = config["domain"].(string)
-	}
-
-	if config["outputTemplate"] != nil {
-		processorConfig.OutputTemplate = config["outputTemplate"].(string)
-	}
-
-	return processorConfig
 }

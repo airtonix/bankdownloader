@@ -2,6 +2,7 @@ BINARY_NAME := "bankdownloader"
 export REGISTRY := "ghcr.io"
 export IMAGE_NAME := "airtonix/bankdownloader"
 
+
 dev *ARGS:
   go run . {{ARGS}}
 
@@ -21,8 +22,13 @@ lint:
   fi
 
 setup:
-  go install github.com/go-delve/delve/cmd/dlv@latest
   go install golang.org/x/tools/cmd/godoc@latest
+  go install golang.org/x/tools/cmd/goimports@latest
+  go install golang.org/x/tools/gopls@latest
+  go install github.com/go-delve/delve/cmd/dlv@latest
+  go install github.com/ramya-rao-a/go-outline@latest
+  go install github.com/stamblerre/gocode@v1.0.0
+  go install github.com/rogpeppe/godef@v1.1.2
   go get .
 
 ci:

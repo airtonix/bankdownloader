@@ -45,6 +45,7 @@ func Execute() {
 
 func Initialize() {
 	InitLogger(nil)
+	store.InitialiseSchemas()
 	store.InitConfig()
 	store.InitHistory()
 }

@@ -1,6 +1,26 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "delve@1.21.0": {
+      "last_modified": "2023-10-25T20:49:13Z",
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#delve",
+      "source": "devbox-search",
+      "version": "1.21.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/iza4ncci28lym2b14myrcwpbg13csfm0-delve-1.21.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/7s37m8z5lbvwcy3c8rc3769cqc3dwd9w-delve-1.21.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/s2zyazyw49l7zgnkixfydfcwq2v7gkgl-delve-1.21.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/jawq0dr7rygs9li2wd1pplfj5gsk5ngz-delve-1.21.0"
+        }
+      }
+    },
     "go@1.20.5": {
       "last_modified": "2023-07-15T19:29:31Z",
       "resolved": "github:NixOS/nixpkgs/29bcead8405cfe4c00085843eb372cc43837bb9d#go",
