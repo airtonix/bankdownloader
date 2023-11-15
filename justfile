@@ -4,7 +4,9 @@ export IMAGE_NAME := "airtonix/bankdownloader"
 
 
 dev *ARGS:
-  go run . {{ARGS}}
+  go run . \
+    --config ./store/config-example.json \
+    {{ARGS}}
 
 build: 
   goreleaser build --snapshot --clean

@@ -11,30 +11,14 @@ builds:
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }}"
     goos:
-      - "darwin"
-      - "freebsd"
       - "linux"
-      - "windows"
     goarch:
       - "amd64"
-      - "386"
       - "arm"
       - "arm64"
     goarm:
       - "6"
       - "7"
-
-universal_binaries:
-  - replace: false
-
-archives:
-  - format: tar.gz
-    name_template: |-
-      {{ .ProjectName }}-{{ .Version }}_{{ .Os }}_{{ if eq .Arch "all" }}universal{{ else }}{{ .Arch }}{{ end }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
-    wrap_in_directory: true
-    format_overrides:
-      - goos: windows
-        format: zip
 
 checksum:
   name_template: "checksums.txt"
@@ -42,30 +26,16 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 
+# release-please handles our changelogs anyway
 changelog:
   skip: true
 
-# # Build Types
-# nfpms:
-#   - id: bankdownloaders
-#     package_name: bankdownloaders
-#     vendor: Airtonix
-#     homepage: http://zenobi.us
-#     description: |-
-#       A CLI tool that downloads bank statements from various banks.
-#     license: MIT
-#     formats:
-#       - rpm
-#       - deb
-#       - apk
-#       - termux.deb
-#       - archlinux
-#     dependencies:
-#       - playwright
-#       - firefox
-#     contents:
-#       - src: dist/bank-downloaders
-#         dst: /usr/bin/bank-downloaders
+# This disables uploading binaries to GitHub releases
+# We don't need this because we use Docker
+# and the binaries are built for ubuntu only 
+# (since playwright only supports ubunut or debuan).
+release:
+  disable: true
 
 dockers:
   - image_templates:
