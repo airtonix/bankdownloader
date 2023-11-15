@@ -3,14 +3,16 @@ package processors
 import (
 	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
-	"gopkg.in/yaml.v3"
+	"github.com/kr/pretty"
+	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 )
 
 type AnzCredentials struct {
 	// username is the customer registration number for ANZ internet banking.
-	Username string `json:"username" yaml:"username"`
+	Username string
 	// password is the password for ANZ internet banking.
-	Password string `json:"password" yaml:"password"`
+	Password string
 }
 
 func NewAnzCredentials(credentials map[string]interface{}) *AnzCredentials {
@@ -28,34 +30,34 @@ func NewAnzCredentials(credentials map[string]interface{}) *AnzCredentials {
 	return anzCredentials
 }
 
-func (credentials *AnzCredentials) UnmarshalYAML(node *yaml.Node) error {
-	var raw interface{}
-	if err := node.Decode(&raw); err != nil {
-		return err
-	}
+// func (credentials *AnzCredentials) UnmarshalYAML(node *yaml.Node) error {
+// 	var raw interface{}
+// 	if err := node.Decode(&raw); err != nil {
+// 		return err
+// 	}
 
-	// parse the anz credentials
-	if err := mergo.Merge(credentials, &AnzCredentials{
-		Username: raw.(map[string]interface{})["username"].(string),
-		Password: raw.(map[string]interface{})["password"].(string),
-	}); err != nil {
-		return err
-	}
+// 	// parse the anz credentials
+// 	if err := mergo.Merge(credentials, &AnzCredentials{
+// 		Username: raw.(map[string]interface{})["username"].(string),
+// 		Password: raw.(map[string]interface{})["password"].(string),
+// 	}); err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 type AnzConfig struct {
-	Credentials      *AnzCredentials `json:"credentials" yaml:"credentials"`
-	*ProcessorConfig `json:",inline" yaml:",inline"`
+	Credentials     AnzCredentials
+	ProcessorConfig `mapstructure:",squash"`
 }
 
 var defaultAnzConfig = AnzConfig{
-	Credentials: &AnzCredentials{
+	Credentials: AnzCredentials{
 		Username: "",
 		Password: "",
 	},
-	ProcessorConfig: &ProcessorConfig{
+	ProcessorConfig: ProcessorConfig{
 		Domain:         "https://login.anz.com",
 		ExportFormat:   "Quicken(QIF)",
 		OutputTemplate: "{{ .SourceSlug }}_{{ .Account.NumberSlug }}_{{ .DateRange.FromUnix }}-{{ .DateRange.ToUnix }}.qif",
@@ -64,12 +66,12 @@ var defaultAnzConfig = AnzConfig{
 }
 
 func NewAnzConfig(config map[string]interface{}) (*AnzConfig, error) {
-	var anzConfig AnzConfig
+	var output AnzConfig
 	var err error
 
 	// merge default config
 	err = mergo.Merge(
-		&anzConfig,
+		&output,
 		defaultAnzConfig,
 	)
 
@@ -78,20 +80,18 @@ func NewAnzConfig(config map[string]interface{}) (*AnzConfig, error) {
 	}
 
 	// merge credentials config
-	credentials := config["credentials"].(map[string]interface{})
+	var anzConfig AnzConfig
+	mapstructure.Decode(config, &anzConfig)
 
 	// var anzCredentials AnzCredentials
 	err = mergo.Merge(
-		&anzConfig,
-		AnzConfig{
-			Credentials:     NewAnzCredentials(credentials),
-			ProcessorConfig: NewProcessorConfig(config),
-		},
+		&output, anzConfig,
 		mergo.WithSliceDeepCopy,
 	)
 	if core.AssertErrorToNilf("could not merge config: %w", err) {
 		return nil, err
 	}
+	logrus.Debugf("anzConfig: %v", pretty.Sprint(output))
 
 	return &anzConfig, nil
 }

@@ -6,43 +6,29 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/store"
-	"github.com/kr/pretty"
 	"github.com/sirupsen/logrus"
 )
 
 type AnzProcessor struct {
-	Config *AnzConfig
-	*Processor
+	Credentials UsernameAndPassword
+	ProcessorConfig
+	Processor
+	Automation *core.Automation
 }
 
 // ensure that AnzProcessor implements the Processor interface
 var _ IProcessor = (*AnzProcessor)(nil)
 
-func (processor *AnzProcessor) GetFormat() string {
-	return processor.Config.ExportFormat
-}
-func (processor *AnzProcessor) GetOutputTemplate() string {
-	return processor.Config.OutputTemplate
-}
-
-func (processor *AnzProcessor) GetDaysToFetch() int {
-	return processor.Config.DaysToFetch
-}
-
-func (processor *AnzProcessor) Render() error {
-	pretty.Println(processor)
-	return nil
-}
-
-func (processor *AnzProcessor) Login(automation *core.Automation) error {
+func (processor *AnzProcessor) Login() error {
 	var err error
+	automation := processor.Automation
 	page := automation.Page
 
-	loginDetails := processor.Config.Credentials
+	loginDetails := processor.Credentials
 
 	url := fmt.Sprintf(
 		"%s/internetbanking",
-		processor.Config.Domain,
+		processor.ProcessorConfig,
 	)
 	logrus.Info("logging into ", url)
 
@@ -88,13 +74,13 @@ func (processor *AnzProcessor) DownloadTransactions(
 	accountNumber string,
 	fromDate time.Time,
 	toDate time.Time,
-	automation *core.Automation,
 ) (string, error) {
 	var err error
+	automation := processor.Automation
 	page := automation.Page
 	dateFormat := "02/01/2006"
 
-	var format = processor.Config.ExportFormat
+	var format = processor.ProcessorConfig.ExportFormat
 	fromDateString := fromDate.Format(dateFormat)
 	toDateString := toDate.Format(dateFormat)
 
@@ -174,7 +160,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 		toDate,
 	)
 
-	filenameTemplate := store.NewFilenameTemplate(processor.Config.OutputTemplate)
+	filenameTemplate := store.NewFilenameTemplate(processor.ProcessorConfig.OutputTemplate)
 
 	// click the download button
 	filename, err := automation.DownloadFile(
@@ -189,24 +175,21 @@ func (processor *AnzProcessor) DownloadTransactions(
 	return filename, nil
 }
 
-func NewAnzParsedProcessor(config map[string]interface{}) (*AnzProcessor, error) {
-	anzConfig, err := NewAnzConfig(config)
-	if err != nil {
-		return nil, err
+func NewAnzProcessor(
+	processorConfig ProcessorConfig,
+	credentials UsernameAndPassword,
+	automation *core.Automation,
+) *AnzProcessor {
+	processor := Processor{
+		Name: "anz",
 	}
 
-	return NewAnzProcessor(anzConfig), nil
-}
-
-func NewAnzProcessor(anzConfig *AnzConfig) *AnzProcessor {
-	processor := &AnzProcessor{
-		Config: anzConfig,
-		Processor: &Processor{
-			Name: "anz",
-		},
+	return &AnzProcessor{
+		Processor:       processor,
+		ProcessorConfig: processorConfig,
+		Automation:      automation,
+		Credentials:     credentials,
 	}
-
-	return processor
 }
 
 // AnzPageObjects is a struct that contains the page objects for the ANZ internet banking website.

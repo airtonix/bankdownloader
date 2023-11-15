@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/airtonix/bank-downloaders/core"
-	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -54,11 +53,6 @@ func NewConfigReader() *viper.Viper {
 	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
 
 	configReader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/config.json")
-
-	configReader.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
-	})
-	configReader.WatchConfig()
 
 	if err := configReader.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

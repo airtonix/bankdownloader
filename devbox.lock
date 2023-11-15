@@ -1,0 +1,65 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "go@1.20.5": {
+      "last_modified": "2023-07-15T19:29:31Z",
+      "resolved": "github:NixOS/nixpkgs/29bcead8405cfe4c00085843eb372cc43837bb9d#go",
+      "source": "devbox-search",
+      "version": "1.20.5",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/5kdi0wd35cs1wbg5i4y5ddrr594d69l5-go-1.20.5"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/bf2lljpk5jsvjxfl4dha2pq3rwyysrlx-go-1.20.5"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/7a01h4f2m2jc0adadlwwkijgxr3zk8kb-go-1.20.5"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/nvydgjdaff1i887x2fk8kygcrbxyfyiy-go-1.20.5"
+        }
+      }
+    },
+    "goreleaser@1.22.1": {
+      "last_modified": "2023-11-09T21:23:13Z",
+      "resolved": "github:NixOS/nixpkgs/1f37660f64a850233baab512c9b9bd83fb72be57#goreleaser",
+      "source": "devbox-search",
+      "version": "1.22.1",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/npd2dv08x90qbpdaxp0a29zcsmh2jxwn-goreleaser-1.22.1"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/i223glllhjbrnm7pwswx7y5m5l212y8v-goreleaser-1.22.1"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/k6rkypg6hpsh4zi52x5grrdb6wvxccz3-goreleaser-1.22.1"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/c7kx0d7lkqcd7gfn1ybkc91fd1x7var1-goreleaser-1.22.1"
+        }
+      }
+    },
+    "just@1.16.0": {
+      "last_modified": "2023-11-11T17:51:48Z",
+      "resolved": "github:NixOS/nixpkgs/911ad1e67f458b6bcf0278fa85e33bb9924fed7e#just",
+      "source": "devbox-search",
+      "version": "1.16.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/3smjijcsywqsb840wblsx9g6zyic5xxd-just-1.16.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/hyvqwghjiz7xmy0qxzd7pfzg8c9cz44y-just-1.16.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/xlp60nz7q0jxan3xq4ra20vgzdjl15ji-just-1.16.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/c39cbcadvxjpy2rgw0gkgykfx8r2bcix-just-1.16.0"
+        }
+      }
+    }
+  }
+}

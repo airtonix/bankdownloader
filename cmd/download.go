@@ -25,30 +25,39 @@ var downloadCmd = &cobra.Command{
 		core.Header("Downloading Transactions")
 
 		for _, item := range config.Sources {
+			credentials := processors.NewCredentials(
+				item.Config.(map[string]interface{}),
+			)
+
+			processorConfig := processors.NewProcessorConfig(
+				item.Config.(map[string]interface{}),
+			)
+
 			source, err := processors.GetProcecssorFactory(
 				item.Name,
-				item.Config.(map[string]interface{}),
+				processorConfig,
+				credentials,
+				automation,
 			)
 			if err != nil {
 				continue
 			}
 
-			core.KeyValue("source", source.GetName())
+			core.KeyValue("source", item.Name)
 			core.KeyValue("accounts", len(item.Accounts))
-			core.KeyValue("config", item.Config)
 
 			core.Action("\nlogging in...")
-			// 	err = source.Login(automation)
-			// 	if core.AssertErrorToNilf("could not login: %w", err) {
-			// 		continue
-			// 	}
+			err = source.Login()
+			if core.AssertErrorToNilf("could not login: %w", err) {
+				continue
+			}
 
 			for _, account := range item.Accounts {
 				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
-				daysToFetch := source.GetDaysToFetch()
+				daysToFetch := processorConfig.DaysToFetch
 
 				fromDate, toDate, err := history.GetDownloadDateRange(
-					source.GetName(),
+					item.Name,
 					account.Number,
 					daysToFetch,
 					strategy,
@@ -60,29 +69,28 @@ var downloadCmd = &cobra.Command{
 				core.KeyValue("date range",
 					fmt.Sprintf("%d: %v - %v", daysToFetch, fromDate, toDate),
 				)
-				// 		filename, err := source.DownloadTransactions(
-				// 			account.Name,
-				// 			account.Number,
-				// 			fromDate,
-				// 			toDate,
-				// 			automation,
-				// 		)
+				filename, err := source.DownloadTransactions(
+					account.Name,
+					account.Number,
+					fromDate,
+					toDate,
+				)
 
-				// 		if core.AssertErrorToNilf("could not download transactions: %w", err) {
-				// 			continue
-				// 		}
+				if core.AssertErrorToNilf("could not download transactions: %w", err) {
+					continue
+				}
 
-				// 		logrus.Infoln(
-				// 			fmt.Sprintf(
-				// 				"Downloaded transactions for %s from %s to %s as %s",
-				// 				account.Name, fromDate, toDate, filename,
-				// 			),
-				// 		)
-				// 		history.SaveEvent(
-				// 			source.GetName(),
-				// 			account.Number,
-				// 			toDate,
-				// 		)
+				logrus.Infoln(
+					fmt.Sprintf(
+						"Downloaded transactions for %s from %s to %s as %s",
+						account.Name, fromDate, toDate, filename,
+					),
+				)
+				history.SaveEvent(
+					item.Name,
+					account.Number,
+					toDate,
+				)
 			}
 		}
 	},

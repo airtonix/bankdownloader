@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fsnotify/fsnotify"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
@@ -193,11 +192,6 @@ func NewHistoryReader() *viper.Viper {
 	reader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
 
 	reader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/history.json")
-
-	reader.OnConfigChange(func(e fsnotify.Event) {
-		fmt.Println("Config file changed:", e.Name)
-	})
-	reader.WatchConfig()
 
 	if err := reader.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

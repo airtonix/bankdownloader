@@ -5,20 +5,11 @@ import (
 	"time"
 
 	"github.com/airtonix/bank-downloaders/core"
-	"gopkg.in/yaml.v3"
 )
 
 type IProcessor interface {
-	GetName() string
-
-	GetDaysToFetch() int
-
-	GetFormat() string
-
-	Render() error
-
 	// function to login to the source
-	Login(automation *core.Automation) error
+	Login() error
 
 	// function to download the transactions
 	DownloadTransactions(
@@ -26,20 +17,25 @@ type IProcessor interface {
 		accountNumber string,
 		fromDate time.Time,
 		toDate time.Time,
-		automation *core.Automation,
 	) (string, error)
 }
 
 func GetProcecssorFactory(
 	processorName string,
-	config map[string]interface{},
+	config ProcessorConfig,
+	credentials Credentials,
+	automation *core.Automation,
 ) (IProcessor, error) {
 	var processor IProcessor
 	var err error
 
 	switch processorName {
 	case "anz":
-		processor, err = NewAnzParsedProcessor(config)
+		processor = NewAnzProcessor(
+			config,
+			credentials.UsernameAndPassword,
+			automation,
+		)
 		if err != nil {
 			return nil, err
 		}
@@ -74,19 +70,7 @@ type ProcessorConfig struct {
 	DaysToFetch    int    `json:"daysToFetch" yaml:"daysToFetch"`       // the number of days to fetch transactions for
 }
 
-func (config *ProcessorConfig) UnmarshalYAML(node *yaml.Node) error {
-	var raw interface{}
-	if err := node.Decode(&raw); err != nil {
-		return err
-	}
-
-	config.ExportFormat = raw.(map[string]interface{})["exportFormat"].(string)
-	config.DaysToFetch = raw.(map[string]interface{})["daysToFetch"].(int)
-
-	return nil
-}
-
-func NewProcessorConfig(config map[string]interface{}) *ProcessorConfig {
+func NewProcessorConfig(config map[string]interface{}) ProcessorConfig {
 
 	var processorConfig ProcessorConfig
 
@@ -102,9 +86,10 @@ func NewProcessorConfig(config map[string]interface{}) *ProcessorConfig {
 	if config["domain"] != nil {
 		processorConfig.Domain = config["domain"].(string)
 	}
+
 	if config["outputTemplate"] != nil {
 		processorConfig.OutputTemplate = config["outputTemplate"].(string)
 	}
 
-	return &processorConfig
+	return processorConfig
 }
