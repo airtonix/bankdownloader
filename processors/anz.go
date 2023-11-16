@@ -190,23 +190,23 @@ func NewAnzProcessor(
 
 // AnzPageObjects is a struct that contains the page objects for the ANZ internet banking website.
 type AnzPageObjects struct {
-	LoginHeader                        string `json:"login_header" yaml:"login_header"`
-	LoginUsernameInput                 string `json:"login_username_input" yaml:"login_username_input"`
-	LoginPasswordInput                 string `json:"login_password_input" yaml:"login_password_input"`
-	LoginButton                        string `json:"login_button" yaml:"login_button"`
-	AccountsPageHeader                 string `json:"accounts_page_header" yaml:"accounts_page_header"`
-	AccountsListAccountButton          string `json:"accounts_list_account_button" yaml:"accounts_list_account_button"`
-	AccountsTransactionTabButton       string `json:"accounts_transaction_tab_button" yaml:"accounts_transaction_tab_button"`
-	AccountGotoExportButton            string `json:"account_goto_export_button" yaml:"account_goto_export_button"`
-	ExportPageHeader                   string `json:"export_page_header" yaml:"export_page_header"`
-	ExportAccountDropdownLabel         string `json:"export_account_dropdown_label" yaml:"export_account_dropdown_label"`
-	ExportAccountDropdownOption        string `json:"export_account_dropdown_option" yaml:"export_account_dropdown_option"`
-	ExportDateRangeModeButton          string `json:"export_date_range_mode_button" yaml:"export_date_range_mode_button"`
-	ExportDateRangeFromDateInput       string `json:"export_from_date_label" yaml:"export_from_date_label"`
-	ExportDateRangeToDateInput         string `json:"export_to_date_label" yaml:"export_to_date_label"`
-	ExportDownloadFormatDropdownLabel  string `json:"export_download_format_dropdown_label" yaml:"export_download_format_dropdown_label"`
-	ExportDownloadFormatDropdownOption string `json:"export_download_format_dropdown_option" yaml:"export_download_format_dropdown_option"`
-	ExportDownloadButton               string `json:"export_download_button" yaml:"export_download_button"`
+	LoginHeader                        string
+	LoginUsernameInput                 string
+	LoginPasswordInput                 string
+	LoginButton                        string
+	AccountsPageHeader                 string
+	AccountsListAccountButton          string
+	AccountsTransactionTabButton       string
+	AccountGotoExportButton            string
+	ExportPageHeader                   string
+	ExportAccountDropdownLabel         string
+	ExportAccountDropdownOption        string
+	ExportDateRangeModeButton          string
+	ExportDateRangeFromDateInput       string
+	ExportDateRangeToDateInput         string
+	ExportDownloadFormatDropdownLabel  string
+	ExportDownloadFormatDropdownOption string
+	ExportDownloadButton               string
 }
 
 var pageObjects = AnzPageObjects{

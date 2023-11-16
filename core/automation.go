@@ -21,9 +21,12 @@ type Automation struct {
 	Cancel  context.CancelFunc
 }
 
+type NewAutomationOptions struct {
+	Headless bool
+}
+
 func NewAutomation() *Automation {
 
-	// create context
 	ctx, cancel := chromedp.NewContext(
 		context.Background(),
 		chromedp.WithLogf(log.Printf),
@@ -122,6 +125,8 @@ func (a *Automation) Focus(selector string) error {
 
 func (a *Automation) Fill(selector string, value string) error {
 	err := chromedp.Run(a.Context,
+		chromedp.WaitVisible(selector),
+		chromedp.Sleep(1000),
 		chromedp.SetValue(selector, value),
 	)
 
