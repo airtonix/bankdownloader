@@ -11,14 +11,30 @@ builds:
     ldflags:
       - "-s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }}"
     goos:
+      - "darwin"
+      - "freebsd"
       - "linux"
+      - "windows"
     goarch:
       - "amd64"
-    #   - "arm"
-    #   - "arm64"
-    # goarm:
-    #   - "6"
-    #   - "7"
+      - "386"
+      - "arm"
+      - "arm64"
+    goarm:
+      - "6"
+      - "7"
+
+universal_binaries:
+  - replace: false
+
+archives:
+  - format: tar.gz
+    name_template: |-
+      {{ .ProjectName }}-{{ .Version }}_{{ .Os }}_{{ if eq .Arch "all" }}universal{{ else }}{{ .Arch }}{{ end }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+    wrap_in_directory: true
+    format_overrides:
+      - goos: windows
+        format: zip
 
 checksum:
   name_template: "checksums.txt"
@@ -26,16 +42,42 @@ checksum:
 snapshot:
   name_template: "{{ .Tag }}-next"
 
-# release-please handles our changelogs anyway
 changelog:
   skip: true
 
-# This disables uploading binaries to GitHub releases
-# We don't need this because we use Docker
-# and the binaries are built for ubuntu only 
-# (since playwright only supports ubunut or debuan).
-release:
-  skip_upload: true
+# # Build Types
+nfpms:
+  - id: github.com/airtonix/bankdownloader
+    package_name: bankdownloader
+    vendor: airtonix
+    homepage: https://github.com/airtonix/bankdownloader/
+    description: |-
+        BankDownloader is a a CLI tool that uses chromium to visit your 
+        banks website and downloads your transaction statements.
+
+        It was created to automate importing transactions into hledger, but you can of course
+        use it for whatever you like.
+        
+        Ideally your bank provides options for machine readable formats liek QIF, CSV, etc.
+        
+        It handles login, selecting accounts, choosing date ranges and a download format.
+
+        Passwords can be sourced from a variety of places, including the tools config 
+        file, gopass or the system keyring.
+    maintainer: Airtonix
+    license: MIT
+    formats:
+      - rpm
+      - deb
+      - apk
+      - archlinux
+    dependencies:
+      - chromium
+    file_name_template: >-
+      {{- trimsuffix .ConventionalFileName .ConventionalExtension -}}
+      {{- if and (eq .Arm "6") (eq .ConventionalExtension ".deb") }}6{{ end -}}
+      {{- if not (eq .Amd64 "v1")}}{{ .Amd64 }}{{ end -}}
+      {{- .ConventionalExtension -}}
 
 dockers:
   - image_templates:
@@ -47,47 +89,44 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
-    extra_files:
-      - "devbox.json"
-      - "devbox.lock"
-  # - image_templates:
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-386"
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-386"
-  #   dockerfile: Dockerfile
-  #   use: buildx
-  #   goos: linux
-  #   goarch: "386"
-  #   build_flag_templates:
-  #     - "--platform=linux/386"
-  # - image_templates:
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-arm64"
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-arm64"
-  #   use: buildx
-  #   goos: linux
-  #   goarch: arm64
-  #   dockerfile: Dockerfile
-  #   build_flag_templates:
-  #     - "--platform=linux/arm64"
-  # - image_templates:
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-armv6"
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-armv6"
-  #   use: buildx
-  #   goos: linux
-  #   goarch: arm
-  #   goarm: "6"
-  #   dockerfile: Dockerfile
-  #   build_flag_templates:
-  #     - "--platform=linux/arm/v6"
-  # - image_templates:
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-armv7"
-  #     - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-armv7"
-  #   use: buildx
-  #   goos: linux
-  #   goarch: arm
-  #   goarm: "7"
-  #   dockerfile: Dockerfile
-  #   build_flag_templates:
-  #     - "--platform=linux/arm/v7"
+  - image_templates:
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-386"
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-386"
+    dockerfile: Dockerfile
+    use: buildx
+    goos: linux
+    goarch: "386"
+    build_flag_templates:
+      - "--platform=linux/386"
+  - image_templates:
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-arm64"
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-arm64"
+    use: buildx
+    goos: linux
+    goarch: arm64
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm64"
+  - image_templates:
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-armv6"
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-armv6"
+    use: buildx
+    goos: linux
+    goarch: arm
+    goarm: "6"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm/v6"
+  - image_templates:
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}-armv7"
+      - "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:latest-armv7"
+    use: buildx
+    goos: linux
+    goarch: arm
+    goarm: "7"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--platform=linux/arm/v7"
 
 docker_manifests:
   - name_template: "{{ .Env.REGISTRY }}/{{ .Env.IMAGE_NAME }}:{{ .Version }}"
