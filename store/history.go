@@ -3,6 +3,8 @@ package store
 import (
 	"fmt"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -185,12 +187,23 @@ func GetHistory() *History {
 
 var historyReader *viper.Viper
 
-func NewHistoryReader() *viper.Viper {
+func NewHistoryReader(configFileArg string) *viper.Viper {
 	reader := viper.New()
 
-	reader.SetConfigName("history")                            // name of config file (without extension)
-	reader.SetConfigType("json")                               // REQUIRED if the config file does not have the extension in the name
-	reader.AddConfigPath(configReader.GetString("configpath")) // call multiple times to add many search paths
+	var configFileName = "history"
+	var configFileExt = "json"
+	if configFileArg != "" {
+		// get the extension of the config file arg
+		configFileExt = strings.TrimLeft(path.Ext(configFileArg), ".")
+		configFileName = strings.TrimSuffix(configFileArg, path.Ext(configFileArg))
+	} else {
+		configFileArg = fmt.Sprintf("%s.%s", configFileName, configFileExt)
+	}
+	configFileDir := path.Dir(configFileArg)
+
+	reader.SetConfigName(configFileName) // name of config file (without extension)
+	reader.SetConfigType(configFileExt)  // REQUIRED if the config file does not have the extension in the name
+	reader.AddConfigPath(configFileDir)
 	reader.AddConfigPath(".")
 	reader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	reader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
@@ -214,7 +227,7 @@ func CreateNewHistoryFile() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	historyFilePath := configReader.Get("configpath")
+	historyFilePath := configReader.Get("config")
 	if historyFilePath == nil {
 		historyFilePath = fmt.Sprintf("%s/history.json", cwd)
 	}
@@ -230,13 +243,9 @@ func CreateNewHistoryFile() {
 	}
 }
 
-func InitHistory() {
-	historyReader = NewHistoryReader()
+func InitHistory(configFileArg string) {
+	historyReader = NewHistoryReader(configFileArg)
 	err := historyReader.Unmarshal(&history)
 	core.AssertErrorToNilf("could not unmarshal history: %w", err)
 	logrus.Debugln("history file", historyReader.ConfigFileUsed())
-}
-
-func init() {
-	InitHistory()
 }

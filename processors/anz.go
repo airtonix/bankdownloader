@@ -21,25 +21,22 @@ var _ IProcessor = (*AnzProcessor)(nil)
 
 func (processor *AnzProcessor) Login() error {
 	var err error
-	automation := processor.Automation
-	page := automation.Page
-
 	loginDetails := processor.Credentials
-
 	url := fmt.Sprintf(
 		"%s/internetbanking",
 		processor.SourceConfig.Domain,
 	)
+
+	automation := processor.Automation
+
 	logrus.Info("logging into ", url)
 
-	page.BringToFront()
-
 	// start at the login page
-	_, err = page.Goto(url)
+	automation.Goto(url)
 	core.AssertErrorToNilf(
 		fmt.Sprintf("could not goto: %s", url),
 		err)
-	page.SetViewportSize(1200, 900)
+	automation.SetViewportSize(1200, 900)
 
 	logrus.Debugln("waiting for login page to load...")
 	// wait for the login page to load
@@ -48,13 +45,13 @@ func (processor *AnzProcessor) Login() error {
 	// Username
 	automation.Find(pageObjects.LoginUsernameInput)
 	automation.Focus(pageObjects.LoginUsernameInput)
-	automation.Page.WaitForTimeout(1000)
+	automation.Pause(1000)
 	automation.Fill(pageObjects.LoginUsernameInput, loginDetails.Username)
 
 	// Password
 	automation.Find(pageObjects.LoginPasswordInput)
 	automation.Focus(pageObjects.LoginPasswordInput)
-	automation.Page.WaitForTimeout(1000)
+	automation.Pause(1000)
 	automation.FillSensitive(pageObjects.LoginPasswordInput, loginDetails.Password)
 
 	// LoginButton
@@ -75,9 +72,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 	fromDate time.Time,
 	toDate time.Time,
 ) (string, error) {
-	var err error
 	automation := processor.Automation
-	page := automation.Page
 	dateFormat := "02/01/2006"
 
 	var format = processor.SourceConfig.ExportFormat
@@ -85,7 +80,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 	toDateString := toDate.Format(dateFormat)
 
 	// get the current hostname for the current page
-	pageUrl := automation.GetPageUrlObject()
+	pageUrl := automation.GetLocation()
 
 	// ANZ web app uses the transactions page for two purposes: searching and downloading.
 	// it's only possible to be in one mode or the other as a result of clicking the right button.
@@ -108,13 +103,11 @@ func (processor *AnzProcessor) DownloadTransactions(
 		),
 	)
 
-	_, err = page.Goto(url)
-	core.AssertErrorToNilf(
-		fmt.Sprintf("could not goto: %s", url),
-		err)
+	automation.Goto(url)
+
 	// ANZ web app uses responsive design, so we need to set the viewport size
 	// otherwise we get a different set of selectors (we use the desktop version)
-	page.SetViewportSize(1200, 900)
+	automation.SetViewportSize(1200, 900)
 
 	// find the account button
 	automation.Click(fmt.Sprintf(pageObjects.AccountsListAccountButton, accountNumber))
@@ -169,6 +162,9 @@ func (processor *AnzProcessor) DownloadTransactions(
 			return automation.Click(pageObjects.ExportDownloadButton)
 		},
 	)
+	core.AssertErrorToNilf(
+		fmt.Sprintf("could not download file: %s", filename),
+		err)
 
 	logrus.Info("Downloaded", filename)
 

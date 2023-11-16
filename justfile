@@ -5,14 +5,15 @@ export IMAGE_NAME := "airtonix/bankdownloader"
 
 dev *ARGS:
   go run . \
-    --config ./store/config-example.json \
+    --config ./store/config.example.json \
+    --history ./store/history.example.json \
     {{ARGS}}
 
 build: 
   goreleaser build --snapshot --clean
 
 release:
-  goreleaser release --clean --skip-publish --snapshot --rm-dist
+  goreleaser release --clean --skip-publish --snapshot --clean
 
 test:
   for PACKAGE in $(go list ./...); do go test -v ${PACKAGE}; done;

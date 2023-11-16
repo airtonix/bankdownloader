@@ -47,7 +47,7 @@ func TestAnzSourceLogin(t *testing.T) {
 
 	defer s.Close()
 
-	automation := &core.Automation{}
+	automation := core.NewAutomation()
 
 	sourceConfig := store.SourceConfig{
 		Domain:         s.URL,
@@ -62,8 +62,6 @@ func TestAnzSourceLogin(t *testing.T) {
 	source := NewAnzProcessor(sourceConfig, credentials, automation)
 
 	t.Log("Created source")
-
-	automation.OpenBrowser()
 
 	err = source.Login()
 
@@ -136,7 +134,7 @@ func TestAnzSourceDownload(t *testing.T) {
 
 	defer s.Close()
 
-	automation := &core.Automation{}
+	automation := core.NewAutomation()
 
 	sourceConfig := store.SourceConfig{
 		Domain:         s.URL,
@@ -152,7 +150,6 @@ func TestAnzSourceDownload(t *testing.T) {
 
 	t.Log("Created source")
 
-	err = automation.OpenBrowser()
 	assert.NoError(t, err, "Problem creating browser")
 
 	t.Log("Opened browser")

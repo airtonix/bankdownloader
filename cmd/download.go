@@ -18,7 +18,6 @@ var downloadCmd = &cobra.Command{
 		config := store.GetConfig()
 
 		automation := core.NewAutomation()
-		automation.OpenBrowser()
 		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
 		core.KeyValue("strategy", strategy.ToString())
 

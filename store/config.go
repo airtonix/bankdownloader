@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/airtonix/bank-downloaders/core"
@@ -50,20 +51,29 @@ func GetConfig() *Configuration {
 
 var configReader *viper.Viper
 
-func NewConfigReader() *viper.Viper {
+func NewConfigReader(configFileArg string) *viper.Viper {
 	configReader = viper.New()
 
 	configReader.SetEnvPrefix(appname)
 	configReader.AutomaticEnv()
 	configReader.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	configReader.BindEnv("configpath")
+	configReader.BindEnv("config")
 
-	logrus.Info(configReader.GetString("configpath"))
+	var configFileName = "config"
+	var configFileExt = "json"
+	if configFileArg != "" {
+		// get the extension of the config file arg
+		configFileExt = strings.TrimLeft(path.Ext(configFileArg), ".")
+		configFileName = strings.TrimSuffix(configFileArg, path.Ext(configFileArg))
+	} else {
+		configFileArg = fmt.Sprintf("%s.%s", configFileName, configFileExt)
+	}
+	configFileDir := path.Dir(configFileArg)
 
 	// lower case the name of the config file
-	configReader.SetConfigName("config")                                 // name of config file (without extension)
-	configReader.SetConfigType("json")                                   // REQUIRED if the config file does not have the extension in the name
-	configReader.AddConfigPath(configReader.GetString("config"))         // call multiple times to add many search paths
+	configReader.SetConfigName(configFileName)                           // name of config file (without extension)
+	configReader.SetConfigType(configFileExt)                            // REQUIRED if the config file does not have the extension in the name
+	configReader.AddConfigPath(configFileDir)                            // optionally look for config in the working directory
 	configReader.AddConfigPath(".")                                      // optionally look for config in the working directory
 	configReader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
@@ -86,7 +96,7 @@ func CreateNewConfigFile() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	configFilePath := configReader.Get("configpath")
+	configFilePath := configReader.Get("config")
 	if configFilePath == nil {
 		configFilePath = fmt.Sprintf("%s/config.json", cwd)
 	}
@@ -102,14 +112,10 @@ func CreateNewConfigFile() {
 	}
 }
 
-func InitConfig() {
-	configReader = NewConfigReader()
+func InitConfig(configFileArg string) {
+	configReader = NewConfigReader(configFileArg)
 	err := configReader.Unmarshal(&conf)
 
 	core.AssertErrorToNilf("could not unmarshal config: %w", err)
 	logrus.Debugln("config file", configReader.ConfigFileUsed())
-}
-
-func init() {
-	InitConfig()
 }

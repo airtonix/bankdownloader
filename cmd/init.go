@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/store"
-	"github.com/playwright-community/playwright-go"
 	"github.com/spf13/cobra"
 )
 
@@ -12,15 +10,7 @@ var initDmd = &cobra.Command{
 	Short: "initialise configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		err := playwright.Install(&playwright.RunOptions{
-			Browsers:            []string{"firefox"},
-			SkipInstallBrowsers: true,
-			Verbose:             true,
-		})
-
-		if core.AssertErrorToNilf("could not install playwright: %w", err) {
-			return
-		}
+		// test if chrome can be found by executable name
 
 		store.CreateNewConfigFile()
 		store.CreateNewHistoryFile()

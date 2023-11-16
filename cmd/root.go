@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/meta"
 	"github.com/airtonix/bank-downloaders/store"
 	"github.com/sirupsen/logrus"
@@ -29,11 +30,11 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(Initialize)
-	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file (default is ./%s.yaml)")
-	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file (default is ./%s-history.yaml)")
+	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file")
+	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "shwo debug messages")
 	rootCmd.PersistentFlags().BoolVar(&headlessFlag, "headless", true, "run browser in headless mode?")
+	cobra.OnInitialize(Initialize)
 }
 
 func Execute() {
@@ -45,9 +46,11 @@ func Execute() {
 
 func Initialize() {
 	InitLogger(nil)
+	core.EnsureChromeExists()
+
 	store.InitialiseSchemas()
-	store.InitConfig()
-	store.InitHistory()
+	store.InitConfig(configFileArg)
+	store.InitHistory(configFileArg)
 }
 
 func InitLogger(hook logrus.Hook) {
