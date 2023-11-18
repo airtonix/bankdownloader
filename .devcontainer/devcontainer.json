@@ -12,5 +12,7 @@
       ]
     }
   },
+  "mounts": [
+  ],
   "remoteUser": "devbox"
 }

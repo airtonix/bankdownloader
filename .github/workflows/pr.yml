@@ -56,3 +56,6 @@ jobs:
 
       - name: Format
         run: devbox run -- just lint
+
+      - name: Format
+        run: devbox run -- just test

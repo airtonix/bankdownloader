@@ -41,6 +41,26 @@
         }
       }
     },
+    "gopass@1.15.8": {
+      "last_modified": "2023-10-25T20:49:13Z",
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#gopass",
+      "source": "devbox-search",
+      "version": "1.15.8",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/gi2bdxmrw7n7g9wcl8hyacnrdq43vfvn-gopass-1.15.8"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/g4gly1wp5fx0kcjigk8p6shijyc6xgak-gopass-1.15.8"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/ksj0jyxja8yil34a1v8qvr6mdp7hihs5-gopass-1.15.8"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/z6npmwq6k5y658cdmcp8nzb8la9bav5v-gopass-1.15.8"
+        }
+      }
+    },
     "goreleaser@1.22.1": {
       "last_modified": "2023-11-09T21:23:13Z",
       "resolved": "github:NixOS/nixpkgs/1f37660f64a850233baab512c9b9bd83fb72be57#goreleaser",

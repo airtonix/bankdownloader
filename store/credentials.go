@@ -1,6 +1,11 @@
 package store
 
-import "os"
+import (
+	"fmt"
+	"os"
+
+	"github.com/airtonix/bank-downloaders/store/clients"
+)
 
 // Load credentials from various sources
 
@@ -74,6 +79,7 @@ func (c *CredentialsEnvSource) Resolve() (ResolvedCredentials, error) {
 
 // CredentialsGopass is a struct that contains the credentials for a source.
 type CredentialsGopassSource struct {
+	Path        string
 	UsernameKey string
 	PasswordKey string
 }
@@ -83,11 +89,25 @@ var _ ICredentialsSource = (*CredentialsGopassSource)(nil)
 
 func (c *CredentialsGopassSource) Type() CredentialSourceType { return CredentialSourceTypeGopass }
 func (c *CredentialsGopassSource) Resolve() (ResolvedCredentials, error) {
+	gopass := clients.NewGopassClient()
+	secret, err := gopass.Get(clients.GopassClientGetOptions{Path: c.Path})
+	var Password string
+	var Username string
+
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get secret for: %s", c.Path)
+	}
+	Username, _ = secret.Get(c.UsernameKey)
+	// if the password key to lowercase is "password", then we can assume that the password is the secret value
+	Password, _ = secret.Get(c.PasswordKey)
+	if c.PasswordKey == "password" {
+		Password = secret.Password()
+	}
+
 	return ResolvedCredentials{
 		UsernameAndPassword: UsernameAndPassword{
-			// TODO: implement gopass integration
-			Username: os.Getenv(c.UsernameKey),
-			Password: os.Getenv(c.PasswordKey),
+			Username,
+			Password,
 		},
 		Type: c.Type(),
 	}, nil
@@ -95,6 +115,7 @@ func (c *CredentialsGopassSource) Resolve() (ResolvedCredentials, error) {
 
 // CredentialsGopassTotp is a struct that contains the credentials for a source.
 type CredentialsGopassTotpSource struct {
+	Path        string
 	UsernameKey string
 	PasswordKey string
 	TotpKey     string
@@ -107,12 +128,36 @@ func (c *CredentialsGopassTotpSource) Type() CredentialSourceType {
 	return CredentialSourceTypeGopassTotp
 }
 func (c *CredentialsGopassTotpSource) Resolve() (ResolvedCredentials, error) {
+	gopass := clients.NewGopassClient()
+	secret, err := gopass.Get(clients.GopassClientGetOptions{Path: c.Path})
+	var Password string
+	var Username string
+	var Totp string
+
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get secret for: %s", c.Path)
+	}
+	Username, _ = secret.Get(c.UsernameKey)
+
+	// if the password key to lowercase is "password", then use gopass api
+	Password, _ = secret.Get(c.PasswordKey)
+	if c.PasswordKey == "password" {
+		Password = secret.Password()
+	}
+	// if the totp key to lowercase is "totp", then use gopass api
+	Totp, _ = secret.Get(c.TotpKey)
+	if c.TotpKey == "totp" {
+		Totp, err = gopass.GetOtpToken(secret)
+		if err != nil {
+			return ResolvedCredentials{}, fmt.Errorf("failed to get totp token for: %s", c.Path)
+		}
+	}
+
 	return ResolvedCredentials{
 		UsernameAndPasswordAndTotp: UsernameAndPasswordAndTotp{
-			// TODO: implement gopass integration
-			Username: os.Getenv(c.UsernameKey),
-			Password: os.Getenv(c.PasswordKey),
-			Totp:     os.Getenv(c.TotpKey),
+			Username,
+			Password,
+			Totp,
 		},
 		Type: c.Type(),
 	}, nil
