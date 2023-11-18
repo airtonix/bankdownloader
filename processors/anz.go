@@ -45,13 +45,11 @@ func (processor *AnzProcessor) Login() error {
 	// Username
 	automation.Find(pageObjects.LoginUsernameInput)
 	automation.Focus(pageObjects.LoginUsernameInput)
-	automation.Pause(1000)
 	automation.Fill(pageObjects.LoginUsernameInput, loginDetails.Username)
 
 	// Password
 	automation.Find(pageObjects.LoginPasswordInput)
 	automation.Focus(pageObjects.LoginPasswordInput)
-	automation.Pause(1000)
 	automation.FillSensitive(pageObjects.LoginPasswordInput, loginDetails.Password)
 
 	// LoginButton
@@ -63,6 +61,7 @@ func (processor *AnzProcessor) Login() error {
 	// wait for the account page to load
 	automation.Find(pageObjects.AccountsPageHeader)
 	logrus.Info("authenticated")
+
 	return nil
 }
 
@@ -79,41 +78,35 @@ func (processor *AnzProcessor) DownloadTransactions(
 	fromDateString := fromDate.Format(dateFormat)
 	toDateString := toDate.Format(dateFormat)
 
-	// get the current hostname for the current page
-	pageUrl := automation.GetLocation()
-
 	// ANZ web app uses the transactions page for two purposes: searching and downloading.
 	// it's only possible to be in one mode or the other as a result of clicking the right button.
 	// As such, when we want to download transactions for an account, we first need to go to the
 	// home page, then click the account button, then click the download button.
-	url := fmt.Sprintf(
-		"%s://%s/IBUI/#/home",
-		pageUrl.Scheme,
-		pageUrl.Host,
-	)
 
 	logrus.Infoln(
 		fmt.Sprintf(
-			"Fetching transactions from: %s \n %s [%s]: %s - %s",
-			url,
+			"Fetching transactions for: %s [%s]: %s - %s",
 			accountName,
 			accountNumber,
 			fromDateString,
 			toDateString,
 		),
 	)
-
-	automation.Goto(url)
-
+	automation.Find(pageObjects.NavigateToHomeButton)
+	automation.Click(pageObjects.NavigateToHomeButton)
 	// ANZ web app uses responsive design, so we need to set the viewport size
 	// otherwise we get a different set of selectors (we use the desktop version)
 	automation.SetViewportSize(1200, 900)
 
+	automation.Pause(100)
+
 	// find the account button
 	automation.Click(fmt.Sprintf(pageObjects.AccountsListAccountButton, accountNumber))
-	automation.Find(pageObjects.AccountsTransactionTabButton)
+
+	automation.Find(fmt.Sprintf(pageObjects.AccountDetailHeader, accountNumber))
+	automation.Find(pageObjects.AccountTransactionTabButton)
 	// click the transaction tab button
-	automation.Click(pageObjects.AccountsTransactionTabButton)
+	automation.Click(pageObjects.AccountTransactionTabButton)
 
 	// find the account button
 	automation.Click(pageObjects.AccountGotoExportButton)
@@ -194,9 +187,11 @@ type AnzPageObjects struct {
 	LoginUsernameInput                 string
 	LoginPasswordInput                 string
 	LoginButton                        string
+	NavigateToHomeButton               string
 	AccountsPageHeader                 string
 	AccountsListAccountButton          string
-	AccountsTransactionTabButton       string
+	AccountTransactionTabButton        string
+	AccountDetailHeader                string
 	AccountGotoExportButton            string
 	ExportPageHeader                   string
 	ExportAccountDropdownLabel         string
@@ -214,17 +209,19 @@ var pageObjects = AnzPageObjects{
 	LoginUsernameInput:                 "input[name='customerRegistrationNumber']",
 	LoginPasswordInput:                 "input[name='password']",
 	LoginButton:                        "button[data-test-id='log-in-btn']",
+	NavigateToHomeButton:               "div[data-test-id='navbar-container'] [role='button'][aria-label='Home']",
 	AccountsPageHeader:                 "h1[id='home-title']",
-	AccountsListAccountButton:          "//div[@id='main-div'] //li[contains(., '%s')]",
-	AccountsTransactionTabButton:       "ul[aria-label='Account Overview'] li[id='Transactionstab']",
-	AccountGotoExportButton:            "//div[@id='search-download'] //button[contains(., 'Download')]",
-	ExportPageHeader:                   "h1[id='search-transaction']",
+	AccountsListAccountButton:          "//div[@id='main-div'] //*[@id='main-details-wrapper'][contains(., '%s')]",
+	AccountDetailHeader:                "//div[@id='account-overview'][contains(., '%s')]",
+	AccountTransactionTabButton:        "//ul[@role='tablist'][@aria-label='Account Overview'] //li[@role='tab'] //*[contains(., 'Transactions')]",
+	AccountGotoExportButton:            "//div[@id='search-download'] //span[contains(., 'Download')]",
+	ExportPageHeader:                   "//h1[@id='search-transaction'][contains(., 'Download transactions')]",
 	ExportAccountDropdownLabel:         "label[for='drop-down-search-transaction-account1-dropdown-field']",
 	ExportAccountDropdownOption:        "//ul[@data-test-id='drop-down-search-transaction-account1-dropdown-results']/li[contains(.,'%s')]",
-	ExportDateRangeModeButton:          "ul[role='tablist'] li[id='Date rangetab']",
+	ExportDateRangeModeButton:          "//ul[@role='tablist'] //li[@aria-controls='Date rangepanel'] //div[contains(., 'Date range')]",
 	ExportDateRangeFromDateInput:       "input[id='fromdate-textfield']",
 	ExportDateRangeToDateInput:         "input[id='todate-textfield']",
 	ExportDownloadFormatDropdownLabel:  "//label[@for='drop-down-search-software-dropdown-field'][contains(., 'Software package')]",
-	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[contains(., '%s')]",
-	ExportDownloadButton:               "//button[contains(., 'Download')]",
+	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[@role='option'][contains(., '%s')]",
+	ExportDownloadButton:               "//*[@data-test-id='footer-primary-button_button'][contains(., 'Download')]",
 }

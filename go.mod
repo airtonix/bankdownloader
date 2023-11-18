@@ -7,6 +7,7 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/chromedp/cdproto v0.0.0-20231011050154-1d073bb38998
 	github.com/gookit/color v1.5.4
+	github.com/gorilla/mux v1.8.1
 	github.com/gosimple/slug v1.13.1
 	github.com/kr/pretty v0.3.1
 	github.com/samber/lo v1.38.1
@@ -25,7 +26,6 @@ require (
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.3.0 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 )
