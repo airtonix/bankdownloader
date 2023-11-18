@@ -9,31 +9,36 @@ import (
 
 	"github.com/gopasspw/gopass/pkg/gopass"
 	"github.com/gopasspw/gopass/pkg/gopass/api"
+	"github.com/gopasspw/gopass/pkg/gopass/apimock"
+	"github.com/gopasspw/gopass/pkg/gopass/secrets"
 	"github.com/gopasspw/gopass/pkg/otp"
 	"github.com/pquerna/otp/hotp"
 	"github.com/pquerna/otp/totp"
 )
 
 // Gopass Client
+type GopassClient interface {
+	Get(context.Context, string, string) (gopass.Secret, error)
+}
 
-type GopassClient struct {
-	gopass  gopass.Store
+type GopassSecretResolver struct {
+	gopass  GopassClient
 	context context.Context
 }
+
 type GopassClientGetOptions struct {
-	Version string
-	Path    string
-	Key     string
+	version string
+	path    string
 }
 
-func (g *GopassClient) Get(options GopassClientGetOptions) (gopass.Secret, error) {
+func (g *GopassSecretResolver) get(options GopassClientGetOptions) (gopass.Secret, error) {
 	var secret gopass.Secret
 
-	version := options.Version
+	version := options.version
 	if version == "" {
 		version = "latest"
 	}
-	path := options.Path
+	path := options.path
 	if path == "" {
 		return secret, errors.New("path is required")
 	}
@@ -47,12 +52,61 @@ func (g *GopassClient) Get(options GopassClientGetOptions) (gopass.Secret, error
 	return secret, nil
 }
 
-func (g *GopassClient) GetOtpToken(secret gopass.Secret) (string, error) {
+func (g *GopassSecretResolver) GetPassword(path string) (string, error) {
+	secret, err := g.get( /*options*/
+		GopassClientGetOptions{
+			version: "latest",
+			path:    path,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	username := secret.Password()
+
+	return username, nil
+}
+
+func (g *GopassSecretResolver) GetUsername(path string) (string, error) {
+	secret, err := g.get( /*options*/
+		GopassClientGetOptions{
+			version: "latest",
+			path:    path,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	username, exists := secret.Get("username")
+	if !exists {
+		return "", fmt.Errorf("username not found")
+	}
+
+	return username, nil
+}
+
+func (g *GopassSecretResolver) GetOtp(path string) (string, error) {
+	secret, err := g.get( /*options*/
+		GopassClientGetOptions{
+			version: "latest",
+			path:    path,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
 	token, err := otp.Calculate("", secret)
 
 	if err != nil {
 		return "", fmt.Errorf("failed to calculate totp token")
 	}
+
 	switch token.Type() {
 	case "totp":
 		return totp.GenerateCode(token.Secret(), time.Now())
@@ -64,14 +118,48 @@ func (g *GopassClient) GetOtpToken(secret gopass.Secret) (string, error) {
 	return "", fmt.Errorf("failed to calculate totp token")
 }
 
-func NewGopassClient() GopassClient {
-	gopassClient := GopassClient{}
+func NewGopassResolver() GopassSecretResolver {
+	gopassClient := GopassSecretResolver{}
 	gopassClient.context = context.Background()
 	api, err := api.New(gopassClient.context)
 	if err != nil {
 		fmt.Printf("Failed to initialize gopass API: %s\n", err)
 		os.Exit(1)
 	}
+	gopassClient.gopass = api
+
+	return gopassClient
+}
+
+func NewMockGopassResolver(data map[string]interface{}) GopassSecretResolver {
+	ctx := context.Background()
+	gopassClient := GopassSecretResolver{}
+	gopassClient.context = ctx
+	api := apimock.New()
+	for k, v := range data {
+		if v == nil {
+			continue
+		}
+
+		secret := secrets.New()
+		// if v.password  set password
+		if v.(map[string]interface{})["password"] != nil {
+			secret.SetPassword(v.(map[string]interface{})["password"].(string))
+		}
+
+		// if v.username  set username
+		if v.(map[string]interface{})["username"] != nil {
+			secret.Set("username", v.(map[string]interface{})["username"].(string))
+		}
+
+		// // if v.totp      set totp
+		// if v.(map[string]interface{})["totp"] != nil {
+		// 	secret.Set("totp", v.(map[string]interface{})["totp"].(string))
+		// }
+
+		api.Set(ctx, k, secret)
+	}
+
 	gopassClient.gopass = api
 
 	return gopassClient

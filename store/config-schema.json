@@ -241,6 +241,10 @@
           "type": "string",
           "const": "gopass"
         },
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
         "usernameKey": {
           "type": "string",
           "minLength": 1
@@ -252,8 +256,7 @@
       },
       "additionalProperties": false,
       "required": [
-        "usernameKey",
-        "passwordKey"
+        "secret"
       ]
     },
     "credentials-keychain": {
@@ -315,6 +318,10 @@
           "type": "string",
           "const": "gopass-totp"
         },
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
         "usernameKey": {
           "type": "string",
           "minLength": 1
@@ -330,9 +337,7 @@
       },
       "additionalProperties": false,
       "required": [
-        "usernameKey",
-        "passwordKey",
-        "totpKey"
+        "secret",
       ]
     },
     "credentials-keychain-totp": {

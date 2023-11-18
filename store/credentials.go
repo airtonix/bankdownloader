@@ -79,9 +79,10 @@ func (c *CredentialsEnvSource) Resolve() (ResolvedCredentials, error) {
 
 // CredentialsGopass is a struct that contains the credentials for a source.
 type CredentialsGopassSource struct {
-	Path        string
+	Secret      string
 	UsernameKey string
 	PasswordKey string
+	Api         clients.GopassSecretResolver
 }
 
 // ensure that CredentialsGopass implements the ICredentials interface
@@ -89,19 +90,13 @@ var _ ICredentialsSource = (*CredentialsGopassSource)(nil)
 
 func (c *CredentialsGopassSource) Type() CredentialSourceType { return CredentialSourceTypeGopass }
 func (c *CredentialsGopassSource) Resolve() (ResolvedCredentials, error) {
-	gopass := clients.NewGopassClient()
-	secret, err := gopass.Get(clients.GopassClientGetOptions{Path: c.Path})
-	var Password string
-	var Username string
-
+	Password, err := c.Api.GetPassword(c.Secret)
 	if err != nil {
-		return ResolvedCredentials{}, fmt.Errorf("failed to get secret for: %s", c.Path)
+		return ResolvedCredentials{}, fmt.Errorf("failed to get password for: %s", c.Secret)
 	}
-	Username, _ = secret.Get(c.UsernameKey)
-	// if the password key to lowercase is "password", then we can assume that the password is the secret value
-	Password, _ = secret.Get(c.PasswordKey)
-	if c.PasswordKey == "password" {
-		Password = secret.Password()
+	Username, err := c.Api.GetUsername(c.Secret)
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get username for: %s", c.Secret)
 	}
 
 	return ResolvedCredentials{
@@ -115,10 +110,11 @@ func (c *CredentialsGopassSource) Resolve() (ResolvedCredentials, error) {
 
 // CredentialsGopassTotp is a struct that contains the credentials for a source.
 type CredentialsGopassTotpSource struct {
-	Path        string
+	Secret      string
 	UsernameKey string
 	PasswordKey string
 	TotpKey     string
+	Api         clients.GopassSecretResolver
 }
 
 // ensure that CredentialsGopassTotp implements the ICredentials interface
@@ -128,29 +124,17 @@ func (c *CredentialsGopassTotpSource) Type() CredentialSourceType {
 	return CredentialSourceTypeGopassTotp
 }
 func (c *CredentialsGopassTotpSource) Resolve() (ResolvedCredentials, error) {
-	gopass := clients.NewGopassClient()
-	secret, err := gopass.Get(clients.GopassClientGetOptions{Path: c.Path})
-	var Password string
-	var Username string
-	var Totp string
-
+	Password, err := c.Api.GetPassword(c.Secret)
 	if err != nil {
-		return ResolvedCredentials{}, fmt.Errorf("failed to get secret for: %s", c.Path)
+		return ResolvedCredentials{}, fmt.Errorf("failed to get password for: %s", c.Secret)
 	}
-	Username, _ = secret.Get(c.UsernameKey)
-
-	// if the password key to lowercase is "password", then use gopass api
-	Password, _ = secret.Get(c.PasswordKey)
-	if c.PasswordKey == "password" {
-		Password = secret.Password()
+	Username, err := c.Api.GetUsername(c.Secret)
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get username for: %s", c.Secret)
 	}
-	// if the totp key to lowercase is "totp", then use gopass api
-	Totp, _ = secret.Get(c.TotpKey)
-	if c.TotpKey == "totp" {
-		Totp, err = gopass.GetOtpToken(secret)
-		if err != nil {
-			return ResolvedCredentials{}, fmt.Errorf("failed to get totp token for: %s", c.Path)
-		}
+	Totp, err := c.Api.GetOtp(c.Secret)
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get totp for: %s", c.Secret)
 	}
 
 	return ResolvedCredentials{
