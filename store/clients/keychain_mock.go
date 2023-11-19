@@ -18,7 +18,5 @@ func MockKeychainResolver(
 		keyring.Set(serviceName, secret.Name, secret.Secret)
 	}
 
-	return &KeychainSecretResolver{
-		keychain: KeychainClient{},
-	}
+	return NewKeychainResolver()
 }
