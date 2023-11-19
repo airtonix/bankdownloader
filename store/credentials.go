@@ -83,7 +83,7 @@ type CredentialsGopassSource struct {
 	Secret      string
 	UsernameKey string
 	PasswordKey string
-	Api         clients.GopassSecretResolver
+	Api         *clients.GopassSecretResolver
 }
 
 // ensure that CredentialsGopass implements the ICredentials interface
@@ -115,7 +115,7 @@ type CredentialsGopassTotpSource struct {
 	UsernameKey string
 	PasswordKey string
 	TotpKey     string
-	Api         clients.GopassSecretResolver
+	Api         *clients.GopassSecretResolver
 	timestampFn func() time.Time
 }
 
@@ -164,6 +164,7 @@ func (c *CredentialsGopassTotpSource) SetTimestampFn(fn func() time.Time) {
 type CredentialsKeychainSource struct {
 	UsernameKey string
 	PasswordKey string
+	Api         clients.KeychainSecretResolver
 }
 
 // ensure that CredentialsKeychain implements the ICredentials interface
@@ -181,31 +182,6 @@ func (c *CredentialsKeychainSource) Resolve() (ResolvedCredentials, error) {
 	}, nil
 }
 
-// CredentialsKeychainTotp is a struct that contains the credentials for a source.
-type CredentialsKeychainTotpSource struct {
-	UsernameKey string
-	PasswordKey string
-	TotpKey     string
-}
-
-// ensure that CredentialsKeychainTotp implements the ICredentials interface
-var _ ICredentialsSource = (*CredentialsKeychainTotpSource)(nil)
-
-func (c *CredentialsKeychainTotpSource) Type() CredentialSourceType {
-	return CredentialSourceTypeKeychainTotp
-}
-func (c *CredentialsKeychainTotpSource) Resolve() (ResolvedCredentials, error) {
-	return ResolvedCredentials{
-		UsernameAndPasswordAndTotp: UsernameAndPasswordAndTotp{
-			// TODO: implement keychain integration
-			Username: os.Getenv(c.UsernameKey),
-			Password: os.Getenv(c.PasswordKey),
-			Totp:     os.Getenv(c.TotpKey),
-		},
-		Type: c.Type(),
-	}, nil
-}
-
 // A fat union
 type CredentialsSource struct {
 	CredentialsFileSource
@@ -213,7 +189,6 @@ type CredentialsSource struct {
 	CredentialsGopassSource
 	CredentialsGopassTotpSource
 	CredentialsKeychainSource
-	CredentialsKeychainTotpSource
 	Type CredentialSourceType
 }
 
@@ -277,14 +252,8 @@ func NewCredentials(source map[string]interface{}) Credentials {
 		}
 		output.ResolvedCredentials, _ = output.CredentialsKeychainSource.Resolve()
 
-	case CredentialSourceTypeKeychainTotp:
-		output.CredentialsKeychainTotpSource = CredentialsKeychainTotpSource{
-			UsernameKey: source["usernameKey"].(string),
-			PasswordKey: source["passwordKey"].(string),
-			TotpKey:     source["totpKey"].(string),
-		}
-		output.ResolvedCredentials, _ = output.CredentialsKeychainTotpSource.Resolve()
-
+	default:
+		panic(fmt.Sprintf("Unknown credential source type: %s", source["type"]))
 	}
 
 	return output

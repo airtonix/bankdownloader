@@ -9,10 +9,10 @@ import (
 )
 
 func TestGopassCredentials(t *testing.T) {
-	store, err := clients.MockGopassApi([]clients.MockStoredGopassSecret{
+	store, err := clients.NewMockGopassSecretResolver([]clients.MockStoredGopassSecret{
 		{
 			Name:   []string{"pathtosecret"},
-			Secret: clients.MockGopassSecret(t, "somepassword\nusername: someguy"),
+			Secret: clients.NewMockGopassSecret(t, "somepassword\nusername: someguy"),
 		},
 	})
 	assert.NoError(t, err)
@@ -34,11 +34,11 @@ func TestGopassCredentials(t *testing.T) {
 func TestGopassTotpCredentials(t *testing.T) {
 	when := time.Date(2022, 1, 1, 2, 1, 1, 1, time.UTC)
 	totpURL := "otpauth://totp/github-fake-account?secret=rpna55555qyho42j"
-	totpSecret := clients.MockGopassSecret(t, "somepassword\nusername: someguy\ntotp: "+totpURL)
+	totpSecret := clients.NewMockGopassSecret(t, "somepassword\nusername: someguy\ntotp: "+totpURL)
 	expectedToken, err := clients.ResolveOtp(totpSecret, when)
 	assert.NoError(t, err)
 
-	store, err := clients.MockGopassApi([]clients.MockStoredGopassSecret{
+	store, err := clients.NewMockGopassSecretResolver([]clients.MockStoredGopassSecret{
 		{
 			Name:   []string{"pathtosecret"},
 			Secret: totpSecret,
@@ -63,5 +63,4 @@ func TestGopassTotpCredentials(t *testing.T) {
 	assert.Equal(t, "someguy", resolved.UsernameAndPasswordAndTotp.Username)
 	assert.Equal(t, "somepassword", resolved.UsernameAndPasswordAndTotp.Password)
 	assert.Equal(t, expectedToken, resolved.UsernameAndPasswordAndTotp.Totp)
-
 }

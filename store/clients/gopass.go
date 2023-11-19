@@ -5,18 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
-	"testing"
 	"time"
 
 	"github.com/gopasspw/gopass/pkg/gopass"
 	"github.com/gopasspw/gopass/pkg/gopass/api"
-	"github.com/gopasspw/gopass/pkg/gopass/apimock"
-	"github.com/gopasspw/gopass/pkg/gopass/secrets/secparse"
 	"github.com/gopasspw/gopass/pkg/otp"
 	potp "github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
-	"github.com/stretchr/testify/require"
 )
 
 // Gopass Client
@@ -114,7 +109,7 @@ func (g *GopassSecretResolver) GetOtp(path string, timestamp time.Time) (string,
 	return token, nil
 }
 
-func NewGopassResolver() GopassSecretResolver {
+func NewGopassResolver() *GopassSecretResolver {
 
 	ctx := context.Background()
 	store, err := api.New(ctx)
@@ -126,12 +121,11 @@ func NewGopassResolver() GopassSecretResolver {
 	return CreateResolver(store, ctx)
 }
 
-func CreateResolver(api GopassClient, context context.Context) GopassSecretResolver {
-	gopassClient := GopassSecretResolver{}
-	gopassClient.context = context
-	gopassClient.gopass = api
-
-	return gopassClient
+func CreateResolver(api GopassClient, context context.Context) *GopassSecretResolver {
+	return &GopassSecretResolver{
+		context: context,
+		gopass:  api,
+	}
 }
 
 func ResolveOtp(secret gopass.Secret, timestamp time.Time) (string, error) {
@@ -155,29 +149,4 @@ func ResolveOtp(secret gopass.Secret, timestamp time.Time) (string, error) {
 	}
 
 	return code, nil
-}
-
-type MockStoredGopassSecret struct {
-	Name   []string
-	Secret gopass.Secret
-}
-
-func MockGopassSecret(t *testing.T, in string) gopass.Secret {
-	t.Helper()
-	sec, err := secparse.Parse([]byte(in))
-	require.NoError(t, err)
-	return sec
-}
-
-func MockGopassApi(secrets []MockStoredGopassSecret) (GopassSecretResolver, error) {
-	ctx := context.Background()
-	store := apimock.New()
-	for _, sec := range secrets {
-		err := store.Set(ctx, strings.Join(sec.Name, "/"), sec.Secret)
-		if err != nil {
-			return GopassSecretResolver{}, err
-		}
-	}
-	fmt.Print(store.List(ctx))
-	return CreateResolver(store, ctx), nil
 }

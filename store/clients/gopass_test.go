@@ -8,10 +8,10 @@ import (
 )
 
 func TestGopassClient(t *testing.T) {
-	store, err := MockGopassApi([]MockStoredGopassSecret{
+	store, err := NewMockGopassSecretResolver([]MockStoredGopassSecret{
 		{
 			Name:   []string{"pathtosecret"},
-			Secret: MockGopassSecret(t, "somepassword\nusername: someguy"),
+			Secret: NewMockGopassSecret(t, "somepassword\nusername: someguy"),
 		},
 	})
 	assert.NoError(t, err)
@@ -28,8 +28,8 @@ func TestGopassClient(t *testing.T) {
 func TestGopassOtpClient(t *testing.T) {
 	when := time.Date(2022, 1, 1, 2, 1, 1, 1, time.UTC)
 	totpURL := "otpauth://totp/github-fake-account?secret=rpna55555qyho42j"
-	secret := MockGopassSecret(t, "somepassword\nusername: someguy\ntotp: "+totpURL)
-	store, err := MockGopassApi([]MockStoredGopassSecret{
+	secret := NewMockGopassSecret(t, "somepassword\nusername: someguy\ntotp: "+totpURL)
+	store, err := NewMockGopassSecretResolver([]MockStoredGopassSecret{
 		{
 			Name:   []string{"pathtosecret"},
 			Secret: secret,
