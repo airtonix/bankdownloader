@@ -2,68 +2,66 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	"github.com/airtonix/bank-downloaders/store/clients"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGopassCredentials(t *testing.T) {
-	expectedUsername := "someguy"
-	expectedPassword := "somepassword"
-
-	client := clients.NewMockGopassResolver(
-		map[string]interface{}{
-			"websites/test.com/someguy": map[string]interface{}{
-				"username": expectedUsername,
-				"password": expectedPassword,
-			},
+	store, err := clients.MockGopassApi([]clients.MockStoredGopassSecret{
+		{
+			Name:   []string{"pathtosecret"},
+			Secret: clients.MockGopassSecret(t, "somepassword\nusername: someguy"),
 		},
-	)
+	})
+	assert.NoError(t, err)
 
 	credentials := &CredentialsGopassSource{
-		Secret:      "websites/test.com/someguy",
+		Secret:      "pathtosecret",
 		UsernameKey: "username",
 		PasswordKey: "password",
-		Api:         client,
+		Api:         store,
 	}
 
 	resolved, err := credentials.Resolve()
-	if err != nil {
-		t.Errorf("failed to resolve credentials: %v", err)
-	}
+	assert.NoError(t, err)
 
-	assert.Equal(t, expectedUsername, resolved.UsernameAndPassword.Username)
-	assert.Equal(t, expectedPassword, resolved.UsernameAndPassword.Password)
+	assert.Equal(t, "someguy", resolved.UsernameAndPassword.Username)
+	assert.Equal(t, "somepassword", resolved.UsernameAndPassword.Password)
 }
-func TestGopassTotpCredentials(t *testing.T) {
-	expectedUsername := "someguy"
-	expectedPassword := "somepassword"
 
-	client := clients.NewMockGopassResolver(
-		map[string]interface{}{
-			"websites/test.com/someguy": map[string]interface{}{
-				"username": expectedUsername,
-				"password": expectedPassword,
-				"totp":     "123456",
-			},
+func TestGopassTotpCredentials(t *testing.T) {
+	when := time.Date(2022, 1, 1, 2, 1, 1, 1, time.UTC)
+	totpURL := "otpauth://totp/github-fake-account?secret=rpna55555qyho42j"
+	totpSecret := clients.MockGopassSecret(t, "somepassword\nusername: someguy\ntotp: "+totpURL)
+	expectedToken, err := clients.ResolveOtp(totpSecret, when)
+	assert.NoError(t, err)
+
+	store, err := clients.MockGopassApi([]clients.MockStoredGopassSecret{
+		{
+			Name:   []string{"pathtosecret"},
+			Secret: totpSecret,
 		},
-	)
+	})
+	assert.NoError(t, err)
 
 	credentials := &CredentialsGopassTotpSource{
-		Secret:      "websites/test.com/someguy",
+		Secret:      "pathtosecret",
 		UsernameKey: "username",
 		PasswordKey: "password",
 		TotpKey:     "totp",
-		Api:         client,
+		Api:         store,
 	}
+	credentials.SetTimestampFn(func() time.Time {
+		return when
+	})
 
 	resolved, err := credentials.Resolve()
-	if err != nil {
-		t.Errorf("failed to resolve credentials: %v", err)
-	}
+	assert.NoError(t, err)
 
-	assert.Equal(t, expectedUsername, resolved.UsernameAndPasswordAndTotp.Username)
-	assert.Equal(t, expectedPassword, resolved.UsernameAndPasswordAndTotp.Password)
-	assert.Len(t, resolved.UsernameAndPasswordAndTotp.Totp, 6)
+	assert.Equal(t, "someguy", resolved.UsernameAndPasswordAndTotp.Username)
+	assert.Equal(t, "somepassword", resolved.UsernameAndPasswordAndTotp.Password)
+	assert.Equal(t, expectedToken, resolved.UsernameAndPasswordAndTotp.Totp)
 
 }

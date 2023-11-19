@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/airtonix/bank-downloaders/store/clients"
 )
@@ -115,6 +116,7 @@ type CredentialsGopassTotpSource struct {
 	PasswordKey string
 	TotpKey     string
 	Api         clients.GopassSecretResolver
+	timestampFn func() time.Time
 }
 
 // ensure that CredentialsGopassTotp implements the ICredentials interface
@@ -132,9 +134,9 @@ func (c *CredentialsGopassTotpSource) Resolve() (ResolvedCredentials, error) {
 	if err != nil {
 		return ResolvedCredentials{}, fmt.Errorf("failed to get username for: %s", c.Secret)
 	}
-	Totp, err := c.Api.GetOtp(c.Secret)
+	Totp, err := c.Api.GetOtp(c.Secret, c.timestampFn())
 	if err != nil {
-		return ResolvedCredentials{}, fmt.Errorf("failed to get totp for: %s", c.Secret)
+		return ResolvedCredentials{}, fmt.Errorf("failed to get totp for: %s. Reason: %+v", c.Secret, err)
 	}
 
 	return ResolvedCredentials{
@@ -145,6 +147,17 @@ func (c *CredentialsGopassTotpSource) Resolve() (ResolvedCredentials, error) {
 		},
 		Type: c.Type(),
 	}, nil
+}
+func (c *CredentialsGopassTotpSource) GetTimestamp() time.Time {
+	fn := c.timestampFn
+	if fn == nil {
+		return time.Now().UTC()
+	}
+	return fn()
+}
+
+func (c *CredentialsGopassTotpSource) SetTimestampFn(fn func() time.Time) {
+	c.timestampFn = fn
 }
 
 // CredentialsKeychain is a struct that contains the credentials for a source.
