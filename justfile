@@ -19,10 +19,8 @@ test:
   for PACKAGE in $(go list ./...); do gotest -v ${PACKAGE}; done;
 
 lint:
-  #!/bin/sh
-  if [ "$(gofmt -s -l . | wc -l)" -gt 0 ];
-    then exit 1;
-  fi
+  go vet ./...
+  staticcheck ./...
 
 setup:
   go install golang.org/x/tools/cmd/godoc@latest
