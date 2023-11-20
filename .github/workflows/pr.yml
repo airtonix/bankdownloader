@@ -9,28 +9,28 @@ on:
       - synchronize
 
 jobs:
-  DetectCheckboxes:
-    runs-on: ubuntu-latest
-    outputs:
-      checked: ${{ steps.detect.outputs.checked }}
+  # DetectCheckboxes:
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     checked: ${{ steps.detect.outputs.checked }}
 
-    if: ${{ !github.event.act }}
+  #   if: ${{ !github.event.act }}
 
-    steps:
-      - uses: marocchino/checkbox-action@83deaedb2f6c61664cccd3f433984e210acbe304
-        id: detect
-        with:
-          action: 'detect'
+  #   steps:
+  #     - uses: marocchino/checkbox-action@83deaedb2f6c61664cccd3f433984e210acbe304
+  #       id: detect
+  #       with:
+  #         action: 'detect'
 
-  PrintCheckboxes:
-    needs: DetectCheckboxes
-    runs-on: ubuntu-latest
+  # PrintCheckboxes:
+  #   needs: DetectCheckboxes
+  #   runs-on: ubuntu-latest
 
-    if: ${{ !github.event.act }}
+  #   if: ${{ !github.event.act }}
 
-    steps:
-      - run: |
-          echo ${{needs.detect.outputs.checked}}
+  #   steps:
+  #     - run: |
+  #         echo ${{needs.detect.outputs.checked}}
 
   LintPrTitle:
     runs-on: ubuntu-latest
@@ -51,14 +51,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: OS Deps
-        uses: ./.github/actions/setup-os
-      
-      # Just let ASDF do its thing. It's far easier and more reliable than trying to do it ourselves.
-      - name: Tooling
-        uses: ./.github/actions/setup-tooling
-        with:
-          SetupCommand: ./setup.sh
+      - name: setup jetpack devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
 
-      - name: Format
-        run: just lint
+      - name: Lint
+        run: devbox run -- just lint
+
+      - name: Test
+        run: devbox run -- just test

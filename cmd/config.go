@@ -2,32 +2,23 @@ package cmd
 
 import (
 	"github.com/airtonix/bank-downloaders/core"
-	"github.com/airtonix/bank-downloaders/processors"
 	"github.com/airtonix/bank-downloaders/store"
-
+	"github.com/kr/pretty"
 	"github.com/spf13/cobra"
 )
 
-var configCmd = &cobra.Command{
+var configDmd = &cobra.Command{
 	Use:   "config",
-	Short: "config related commands",
+	Short: "show configuration",
 	Run: func(cmd *cobra.Command, args []string) {
+		core.Header("Config")
+		pretty.Println(store.GetConfig())
 
-		core.Header("Configured Sources")
-
-		for _, item := range store.GetConfigSources() {
-			source, err := processors.GetProcecssorFactory(
-				item.Name,
-				item.Config.(map[string]interface{}),
-			)
-			if err != nil {
-				continue
-			}
-			source.Render()
-		}
+		core.Header("History")
+		pretty.Println(store.GetHistory())
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(configCmd)
+	rootCmd.AddCommand(configDmd)
 }

@@ -25,8 +25,15 @@ func Header(message string) {
 
 func KeyValue(key string, value any) {
 	fmt.Printf(
-		"%s: %s\n",
+		"\t%s: %s\n",
 		color.FgYellow.Render(key),
 		color.FgWhite.Render(value),
+	)
+}
+
+func Action(name string) {
+	fmt.Printf(
+		"\t%s",
+		color.FgGray.Render(name),
 	)
 }

@@ -6,54 +6,37 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/store"
-	"github.com/kr/pretty"
 	"github.com/sirupsen/logrus"
 )
 
 type AnzProcessor struct {
-	Config *AnzConfig
-	*Processor
+	Credentials store.UsernameAndPassword
+	store.SourceConfig
+	Processor
+	Automation *core.Automation
 }
 
 // ensure that AnzProcessor implements the Processor interface
 var _ IProcessor = (*AnzProcessor)(nil)
 
-func (processor *AnzProcessor) GetFormat() string {
-	return processor.Config.ExportFormat
-}
-func (processor *AnzProcessor) GetOutputTemplate() string {
-	return processor.Config.OutputTemplate
-}
-
-func (processor *AnzProcessor) GetDaysToFetch() int {
-	return processor.Config.DaysToFetch
-}
-
-func (processor *AnzProcessor) Render() error {
-	pretty.Println(processor)
-	return nil
-}
-
-func (processor *AnzProcessor) Login(automation *core.Automation) error {
+func (processor *AnzProcessor) Login() error {
 	var err error
-	page := automation.Page
-
-	loginDetails := processor.Config.Credentials
-
+	loginDetails := processor.Credentials
 	url := fmt.Sprintf(
 		"%s/internetbanking",
-		processor.Config.Domain,
+		processor.SourceConfig.Domain,
 	)
+
+	automation := processor.Automation
+
 	logrus.Info("logging into ", url)
 
-	page.BringToFront()
-
 	// start at the login page
-	_, err = page.Goto(url)
+	automation.Goto(url)
 	core.AssertErrorToNilf(
 		fmt.Sprintf("could not goto: %s", url),
 		err)
-	page.SetViewportSize(1200, 900)
+	automation.SetViewportSize(1200, 900)
 
 	logrus.Debugln("waiting for login page to load...")
 	// wait for the login page to load
@@ -62,13 +45,11 @@ func (processor *AnzProcessor) Login(automation *core.Automation) error {
 	// Username
 	automation.Find(pageObjects.LoginUsernameInput)
 	automation.Focus(pageObjects.LoginUsernameInput)
-	automation.Page.WaitForTimeout(1000)
 	automation.Fill(pageObjects.LoginUsernameInput, loginDetails.Username)
 
 	// Password
 	automation.Find(pageObjects.LoginPasswordInput)
 	automation.Focus(pageObjects.LoginPasswordInput)
-	automation.Page.WaitForTimeout(1000)
 	automation.FillSensitive(pageObjects.LoginPasswordInput, loginDetails.Password)
 
 	// LoginButton
@@ -80,6 +61,7 @@ func (processor *AnzProcessor) Login(automation *core.Automation) error {
 	// wait for the account page to load
 	automation.Find(pageObjects.AccountsPageHeader)
 	logrus.Info("authenticated")
+
 	return nil
 }
 
@@ -88,53 +70,43 @@ func (processor *AnzProcessor) DownloadTransactions(
 	accountNumber string,
 	fromDate time.Time,
 	toDate time.Time,
-	automation *core.Automation,
 ) (string, error) {
-	var err error
-	page := automation.Page
+	automation := processor.Automation
 	dateFormat := "02/01/2006"
 
-	var format = processor.Config.ExportFormat
+	var format = processor.SourceConfig.ExportFormat
 	fromDateString := fromDate.Format(dateFormat)
 	toDateString := toDate.Format(dateFormat)
-
-	// get the current hostname for the current page
-	pageUrl := automation.GetPageUrlObject()
 
 	// ANZ web app uses the transactions page for two purposes: searching and downloading.
 	// it's only possible to be in one mode or the other as a result of clicking the right button.
 	// As such, when we want to download transactions for an account, we first need to go to the
 	// home page, then click the account button, then click the download button.
-	url := fmt.Sprintf(
-		"%s://%s/IBUI/#/home",
-		pageUrl.Scheme,
-		pageUrl.Host,
-	)
 
 	logrus.Infoln(
 		fmt.Sprintf(
-			"Fetching transactions from: %s \n %s [%s]: %s - %s",
-			url,
+			"Fetching transactions for: %s [%s]: %s - %s",
 			accountName,
 			accountNumber,
 			fromDateString,
 			toDateString,
 		),
 	)
-
-	_, err = page.Goto(url)
-	core.AssertErrorToNilf(
-		fmt.Sprintf("could not goto: %s", url),
-		err)
+	automation.Find(pageObjects.NavigateToHomeButton)
+	automation.Click(pageObjects.NavigateToHomeButton)
 	// ANZ web app uses responsive design, so we need to set the viewport size
 	// otherwise we get a different set of selectors (we use the desktop version)
-	page.SetViewportSize(1200, 900)
+	automation.SetViewportSize(1200, 900)
+
+	automation.Pause(100)
 
 	// find the account button
 	automation.Click(fmt.Sprintf(pageObjects.AccountsListAccountButton, accountNumber))
-	automation.Find(pageObjects.AccountsTransactionTabButton)
+
+	automation.Find(fmt.Sprintf(pageObjects.AccountDetailHeader, accountNumber))
+	automation.Find(pageObjects.AccountTransactionTabButton)
 	// click the transaction tab button
-	automation.Click(pageObjects.AccountsTransactionTabButton)
+	automation.Click(pageObjects.AccountTransactionTabButton)
 
 	// find the account button
 	automation.Click(pageObjects.AccountGotoExportButton)
@@ -174,7 +146,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 		toDate,
 	)
 
-	filenameTemplate := store.NewFilenameTemplate(processor.Config.OutputTemplate)
+	filenameTemplate := store.NewFilenameTemplate(processor.OutputTemplate)
 
 	// click the download button
 	filename, err := automation.DownloadFile(
@@ -183,51 +155,53 @@ func (processor *AnzProcessor) DownloadTransactions(
 			return automation.Click(pageObjects.ExportDownloadButton)
 		},
 	)
+	core.AssertErrorToNilf(
+		fmt.Sprintf("could not download file: %s", filename),
+		err)
 
 	logrus.Info("Downloaded", filename)
 
 	return filename, nil
 }
 
-func NewAnzParsedProcessor(config map[string]interface{}) (*AnzProcessor, error) {
-	anzConfig, err := NewAnzConfig(config)
-	if err != nil {
-		return nil, err
+func NewAnzProcessor(
+	config store.SourceConfig,
+	credentials store.UsernameAndPassword,
+	automation *core.Automation,
+) *AnzProcessor {
+	processor := Processor{
+		Name: "anz",
 	}
 
-	return NewAnzProcessor(anzConfig), nil
-}
-
-func NewAnzProcessor(anzConfig *AnzConfig) *AnzProcessor {
-	processor := &AnzProcessor{
-		Config: anzConfig,
-		Processor: &Processor{
-			Name: "anz",
-		},
+	return &AnzProcessor{
+		Processor:    processor,
+		SourceConfig: config,
+		Automation:   automation,
+		Credentials:  credentials,
 	}
-
-	return processor
 }
 
 // AnzPageObjects is a struct that contains the page objects for the ANZ internet banking website.
 type AnzPageObjects struct {
-	LoginHeader                        string `json:"login_header" yaml:"login_header"`
-	LoginUsernameInput                 string `json:"login_username_input" yaml:"login_username_input"`
-	LoginPasswordInput                 string `json:"login_password_input" yaml:"login_password_input"`
-	LoginButton                        string `json:"login_button" yaml:"login_button"`
-	AccountsPageHeader                 string `json:"accounts_page_header" yaml:"accounts_page_header"`
-	AccountsListAccountButton          string `json:"accounts_list_account_button" yaml:"accounts_list_account_button"`
-	AccountsTransactionTabButton       string `json:"accounts_transaction_tab_button" yaml:"accounts_transaction_tab_button"`
-	AccountGotoExportButton            string `json:"account_goto_export_button" yaml:"account_goto_export_button"`
-	ExportPageHeader                   string `json:"export_page_header" yaml:"export_page_header"`
-	ExportAccountDropdownLabel         string `json:"export_account_dropdown_label" yaml:"export_account_dropdown_label"`
-	ExportAccountDropdownOption        string `json:"export_account_dropdown_option" yaml:"export_account_dropdown_option"`
-	ExportDateRangeModeButton          string `json:"export_date_range_mode_button" yaml:"export_date_range_mode_button"`
-	ExportDateRangeFromDateInput       string `json:"export_from_date_label" yaml:"export_from_date_label"`
-	ExportDateRangeToDateInput         string `json:"export_to_date_label" yaml:"export_to_date_label"`
-	ExportDownloadFormatDropdownLabel  string `json:"export_download_format_dropdown_label" yaml:"export_download_format_dropdown_label"`
-	ExportDownloadFormatDropdownOption string `json:"export_download_format_dropdown_option" yaml:"export_download_format_dropdown_option"`
-	ExportDownloadButton               string `json:"export_download_button" yaml:"export_download_button"`
+	LoginHeader                        string
+	LoginUsernameInput                 string
+	LoginPasswordInput                 string
+	LoginButton                        string
+	NavigateToHomeButton               string
+	AccountsPageHeader                 string
+	AccountsListAccountButton          string
+	AccountTransactionTabButton        string
+	AccountDetailHeader                string
+	AccountGotoExportButton            string
+	ExportPageHeader                   string
+	ExportAccountDropdownLabel         string
+	ExportAccountDropdownOption        string
+	ExportDateRangeModeButton          string
+	ExportDateRangeFromDateInput       string
+	ExportDateRangeToDateInput         string
+	ExportDownloadFormatDropdownLabel  string
+	ExportDownloadFormatDropdownOption string
+	ExportDownloadButton               string
 }
 
 var pageObjects = AnzPageObjects{
@@ -235,17 +209,19 @@ var pageObjects = AnzPageObjects{
 	LoginUsernameInput:                 "input[name='customerRegistrationNumber']",
 	LoginPasswordInput:                 "input[name='password']",
 	LoginButton:                        "button[data-test-id='log-in-btn']",
+	NavigateToHomeButton:               "div[data-test-id='navbar-container'] [role='button'][aria-label='Home']",
 	AccountsPageHeader:                 "h1[id='home-title']",
-	AccountsListAccountButton:          "//div[@id='main-div'] //li[contains(., '%s')]",
-	AccountsTransactionTabButton:       "ul[aria-label='Account Overview'] li[id='Transactionstab']",
-	AccountGotoExportButton:            "//div[@id='search-download'] //button[contains(., 'Download')]",
-	ExportPageHeader:                   "h1[id='search-transaction']",
+	AccountsListAccountButton:          "//div[@id='main-div'] //*[@id='main-details-wrapper'][contains(., '%s')]",
+	AccountDetailHeader:                "//div[@id='account-overview'][contains(., '%s')]",
+	AccountTransactionTabButton:        "//ul[@role='tablist'][@aria-label='Account Overview'] //li[@role='tab'] //*[contains(., 'Transactions')]",
+	AccountGotoExportButton:            "//div[@id='search-download'] //span[contains(., 'Download')]",
+	ExportPageHeader:                   "//h1[@id='search-transaction'][contains(., 'Download transactions')]",
 	ExportAccountDropdownLabel:         "label[for='drop-down-search-transaction-account1-dropdown-field']",
 	ExportAccountDropdownOption:        "//ul[@data-test-id='drop-down-search-transaction-account1-dropdown-results']/li[contains(.,'%s')]",
-	ExportDateRangeModeButton:          "ul[role='tablist'] li[id='Date rangetab']",
+	ExportDateRangeModeButton:          "//ul[@role='tablist'] //li[@aria-controls='Date rangepanel'] //div[contains(., 'Date range')]",
 	ExportDateRangeFromDateInput:       "input[id='fromdate-textfield']",
 	ExportDateRangeToDateInput:         "input[id='todate-textfield']",
 	ExportDownloadFormatDropdownLabel:  "//label[@for='drop-down-search-software-dropdown-field'][contains(., 'Software package')]",
-	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[contains(., '%s')]",
-	ExportDownloadButton:               "//button[contains(., 'Download')]",
+	ExportDownloadFormatDropdownOption: "//ul[@data-test-id='drop-down-search-software-dropdown-results']/li[@role='option'][contains(., '%s')]",
+	ExportDownloadButton:               "//*[@data-test-id='footer-primary-button_button'][contains(., 'Download')]",
 }

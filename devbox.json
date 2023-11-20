@@ -1,0 +1,9 @@
+{
+  "packages": [
+    "go@1.20.5",
+    "goreleaser@1.22.1",
+    "just@1.16.0",
+    "delve@1.21.0",
+    "gopass@1.15.8"
+  ]
+}

@@ -1,4 +1,4 @@
-package schemas
+package store
 
 import (
 	_ "embed"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 var itemsUniquePropertiesMeta = jsonschema.MustCompileString("itemsUniqueProperties.json", `{
@@ -56,15 +56,15 @@ func (s itemsUniquePropertiesSchema) Validate(ctx jsonschema.ValidationContext, 
 	return nil
 }
 
-//go:embed config.json
+//go:embed config-schema.json
 var ConfigSchemaJson string
 var configSchema *jsonschema.Schema
 
-//go:embed history.json
+//go:embed history-schema.json
 var HistorySchemaJson string
 var historySchema *jsonschema.Schema
 
-func Initialize() {
+func InitialiseSchemas() {
 	var err error
 	c := jsonschema.NewCompiler()
 	c.RegisterExtension(
@@ -75,14 +75,14 @@ func Initialize() {
 
 	err = c.AddResource("config.json", strings.NewReader(ConfigSchemaJson))
 	if core.AssertErrorToNilf("could not add schemas/config.json: %w", err) {
-		log.Fatal(err)
+		logrus.Fatal(err)
 		return
 	}
 	configSchema = c.MustCompile("config.json")
 
 	err = c.AddResource("history.json", strings.NewReader(HistorySchemaJson))
 	if core.AssertErrorToNilf("could not add schemas/history.json: %w", err) {
-		log.Fatal(err)
+		logrus.Fatal(err)
 		return
 	}
 	historySchema = c.MustCompile("history.json")

@@ -46,26 +46,38 @@ changelog:
   skip: true
 
 # # Build Types
-# nfpms:
-#   - id: bankdownloaders
-#     package_name: bankdownloaders
-#     vendor: Airtonix
-#     homepage: http://zenobi.us
-#     description: |-
-#       A CLI tool that downloads bank statements from various banks.
-#     license: MIT
-#     formats:
-#       - rpm
-#       - deb
-#       - apk
-#       - termux.deb
-#       - archlinux
-#     dependencies:
-#       - playwright
-#       - firefox
-#     contents:
-#       - src: dist/bank-downloaders
-#         dst: /usr/bin/bank-downloaders
+nfpms:
+  - id: github.com/airtonix/bankdownloader
+    package_name: bankdownloader
+    vendor: airtonix
+    homepage: https://github.com/airtonix/bankdownloader/
+    description: |-
+        BankDownloader is a a CLI tool that uses chromium to visit your 
+        banks website and downloads your transaction statements.
+
+        It was created to automate importing transactions into hledger, but you can of course
+        use it for whatever you like.
+        
+        Ideally your bank provides options for machine readable formats liek QIF, CSV, etc.
+        
+        It handles login, selecting accounts, choosing date ranges and a download format.
+
+        Passwords can be sourced from a variety of places, including the tools config 
+        file, gopass or the system keyring.
+    maintainer: Airtonix
+    license: MIT
+    formats:
+      - rpm
+      - deb
+      - apk
+      - archlinux
+    dependencies:
+      - chromium
+    file_name_template: >-
+      {{- trimsuffix .ConventionalFileName .ConventionalExtension -}}
+      {{- if and (eq .Arm "6") (eq .ConventionalExtension ".deb") }}6{{ end -}}
+      {{- if not (eq .Amd64 "v1")}}{{ .Amd64 }}{{ end -}}
+      {{- .ConventionalExtension -}}
 
 dockers:
   - image_templates:

@@ -15,45 +15,60 @@ var downloadCmd = &cobra.Command{
 	Short: "dwnloads transactions from a source",
 	Run: func(cmd *cobra.Command, args []string) {
 		history := store.GetHistory()
-		automation := core.NewAutomation()
-		core.Header("Downloading Sources")
-		automation.OpenBrowser()
-		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
-		logrus.Infof("strategy: %s", strategy.ToString())
+		config := store.GetConfig()
 
-		for _, item := range store.GetConfigSources() {
+		automation := core.NewAutomation()
+		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
+		core.KeyValue("strategy", strategy.ToString())
+
+		core.Header("Downloading Transactions")
+
+		for _, item := range config.Sources {
+			credentials := store.NewCredentials(
+				item.Config.Credentials,
+			)
+
 			source, err := processors.GetProcecssorFactory(
-				item.Name,
-				item.Config.(map[string]interface{}),
+				item.Type,
+				item.Config,
+				credentials,
+				automation,
 			)
 			if err != nil {
 				continue
 			}
 
-			err = source.Login(automation)
+			core.KeyValue("source", item.Type)
+			core.KeyValue("accounts", len(item.Accounts))
+
+			core.Action("\nlogging in...")
+			err = source.Login()
 			if core.AssertErrorToNilf("could not login: %w", err) {
 				continue
 			}
 
 			for _, account := range item.Accounts {
 				logrus.Infof("\nprocessing account: %s [%s]\n", account.Name, account.Number)
+				daysToFetch := item.Config.DaysToFetch
+
 				fromDate, toDate, err := history.GetDownloadDateRange(
-					source.GetName(),
+					item.Type,
 					account.Number,
-					source.GetDaysToFetch(),
+					daysToFetch,
 					strategy,
 				)
 				if err != nil {
 					logrus.Warnf("Skipping: %s. Since %s", account.Number, err)
 					continue
 				}
-
+				core.KeyValue("date range",
+					fmt.Sprintf("%d: %v - %v", daysToFetch, fromDate, toDate),
+				)
 				filename, err := source.DownloadTransactions(
 					account.Name,
 					account.Number,
 					fromDate,
 					toDate,
-					automation,
 				)
 
 				if core.AssertErrorToNilf("could not download transactions: %w", err) {
@@ -67,7 +82,7 @@ var downloadCmd = &cobra.Command{
 					),
 				)
 				history.SaveEvent(
-					source.GetName(),
+					item.Type,
 					account.Number,
 					toDate,
 				)

@@ -1,150 +1,121 @@
 package store
 
 import (
-	_ "embed"
-	"time"
+	"fmt"
+	"os"
+	"path"
+	"strings"
 
-	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
-	"github.com/airtonix/bank-downloaders/schemas"
-	log "github.com/sirupsen/logrus"
-
-	"gopkg.in/yaml.v3"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
-type JobAccount struct {
-	Name   string `json:"name" yaml:"name"`
-	Number string `json:"number" yaml:"number"`
+type Account struct {
+	Name           string
+	Number         string
+	OutputTemplate string `mapstructure:",omitempty"`
+	Format         string `mapstructure:",omitempty"`
 }
 
-// A job is a set of instructions for downloading transactions from a source
-// We would download transactions for a set of accounts for a number of days
-type ConfigSource struct {
-	Name     string       `json:"name" yaml:"name"`         // the name of the source. This is used to lookup the source in the registry
-	Accounts []JobAccount `json:"accounts" yaml:"accounts"` // the accounts to download transactions for
-	Config   any          // the source specific config, ignore it when marshalling
+type SourceConfig struct {
+	Domain         string
+	ExportFormat   string
+	OutputTemplate string
+	DaysToFetch    int
+	Credentials    map[string]interface{}
 }
 
-type Config struct {
-	DateFormat string         `json:"dateFormat" yaml:"dateFormat"` // the format to use for dates
-	Sources    []ConfigSource `json:"sources" yaml:"sources"`
+type SourceType string
+
+var (
+	AnzSourceType SourceType = "anz"
+)
+
+type Source struct {
+	Type     SourceType
+	Accounts []Account
+	Config   SourceConfig
 }
 
-func (this *Config) Save() error {
-	// marshal contents into bytes[]
-	log.Info("saving config: ", configFilePath)
-	SaveYamlFile(this, configFilePath)
-	return nil
+type Configuration struct {
+	DateFormat string   `mapstructure:"dateformat"`
+	Sources    []Source `mapstructure:"sources"`
 }
 
-// Config Singleton
-var config Config
-var configFilePath string
-var defaultConfig = &Config{}
-var defaultConfigTree = &yaml.Node{
-	Kind: yaml.DocumentNode,
-	Content: []*yaml.Node{
-		{
-			Kind: yaml.MappingNode,
-			Content: []*yaml.Node{
-				{
-					Kind:        yaml.ScalarNode,
-					Value:       "dateFormat",
-					HeadComment: "# yaml-language-server: $schema=https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/config.json",
-				},
-				{
-					Kind:  yaml.ScalarNode,
-					Style: yaml.DoubleQuotedStyle,
-					Value: time.RFC3339,
-				},
-				{
-					Kind:  yaml.ScalarNode,
-					Value: "sources",
-				},
-				{
-					Kind:    yaml.SequenceNode,
-					Content: []*yaml.Node{},
-				},
-			},
-		},
-	},
+var conf Configuration
+
+func GetConfig() *Configuration {
+	return &conf
 }
 
-func NewConfig(filepathArg string) (Config, error) {
-	filename := "config.yaml"
-	filepath := core.ResolveFileArg(
-		filepathArg,
-		"BANKDOWNLOADER_CONFIG",
-		filename,
-	)
+var configReader *viper.Viper
 
-	// Initialise the config with default values
-	err := mergo.Merge(
-		&config,
-		defaultConfig,
-		mergo.WithOverrideEmptySlice)
-	if core.AssertErrorToNilf("could not ensure default config values: %w", err) {
-		return config, err
+func NewConfigReader(configFileArg string) *viper.Viper {
+	configReader = viper.New()
+
+	configReader.SetEnvPrefix(appname)
+	configReader.AutomaticEnv()
+	configReader.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	configReader.BindEnv("config")
+
+	var configFileName = "config"
+	var configFileExt = "json"
+	if configFileArg != "" {
+		// get the extension of the config file arg
+		configFileExt = strings.TrimLeft(path.Ext(configFileArg), ".")
+		configFileName = strings.TrimSuffix(configFileArg, path.Ext(configFileArg))
+	} else {
+		configFileArg = fmt.Sprintf("%s.%s", configFileName, configFileExt)
+	}
+	configFileDir := path.Dir(configFileArg)
+
+	// lower case the name of the config file
+	configReader.SetConfigName(configFileName)                           // name of config file (without extension)
+	configReader.SetConfigType(configFileExt)                            // REQUIRED if the config file does not have the extension in the name
+	configReader.AddConfigPath(configFileDir)                            // optionally look for config in the working directory
+	configReader.AddConfigPath(".")                                      // optionally look for config in the working directory
+	configReader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
+	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
+
+	configReader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/store/config-schema.json")
+
+	if err := configReader.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+		} else {
+			// Config file was found but another error was produced
+		}
+	}
+	return configReader
+}
+
+func CreateNewConfigFile() {
+	// current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	configFilePath := configReader.Get("config")
+	if configFilePath == nil {
+		configFilePath = fmt.Sprintf("%s/config.json", cwd)
 	}
 
-	// Check if the config file exists
-	// If it doesn't, create it
-	if !core.FileExists(filepath) {
-		CreateDefaultConfig(filepath)
+	// if the file exists, don't overwrite it
+	if _, err := os.Stat(configFilePath.(string)); err == nil {
+		return
 	}
 
-	// Load the config file and parse it
-	var configObject Config
-	err = LoadYamlFile[Config](
-		filepath,
-		schemas.GetConfigSchema(),
-		&configObject,
-	)
-	if core.AssertErrorToNilf("could not load config file: %w", err) {
-		return config, err
+	logrus.Infof("Creating new  config file: %s", configFilePath)
+	if err := configReader.SafeWriteConfigAs(configFilePath.(string)); err != nil {
+		logrus.Fatal(err)
 	}
-	// merge it on top of the config
-	err = mergo.Merge(
-		&config,
-		configObject,
-		mergo.WithOverrideEmptySlice,
-	)
-	if core.AssertErrorToNilf("could not merge user config values: %w", err) {
-		return config, err
-	}
-
-	log.Info("config ready: ", filepath)
-
-	// store the config as a singleton
-	config = configObject
-	configFilePath = filepath
-
-	// also return it
-	return config, nil
 }
 
-func CreateDefaultConfig(configFilePath string) Config {
-	var defaultConfig Config
+func InitConfig(configFileArg string) {
+	configReader = NewConfigReader(configFileArg)
+	err := configReader.Unmarshal(&conf)
 
-	log.Info("creating default config: ", configFilePath)
-
-	content, err := yaml.Marshal(defaultConfigTree)
-	WriteFile(configFilePath, content)
-
-	if core.AssertErrorToNilf("could not marshal default config: %w", err) {
-		return defaultConfig
-	}
-	return defaultConfig
-}
-
-func GetConfig() Config {
-	return config
-}
-
-func GetDateFormat() string {
-	return config.DateFormat
-}
-
-func GetConfigSources() []ConfigSource {
-	return config.Sources
+	core.AssertErrorToNilf("could not unmarshal config: %w", err)
+	logrus.Debugln("config file", configReader.ConfigFileUsed())
 }

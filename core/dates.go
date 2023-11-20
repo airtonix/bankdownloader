@@ -24,8 +24,9 @@ func GetToday() time.Time {
 	return ToStartOfDay(Now())
 }
 
-func GetDaysAgo(date time.Time, days int) time.Time {
-	return ToStartOfDay(date.AddDate(0, 0, -days))
+func GetDaysAgo(fromDate time.Time, days int) time.Time {
+
+	return ToStartOfDay(fromDate.AddDate(0, 0, -days))
 }
 
 func GetTodayMinusDays(days int) time.Time {

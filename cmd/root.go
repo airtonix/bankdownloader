@@ -7,18 +7,16 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/meta"
 	"github.com/airtonix/bank-downloaders/store"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/snowzach/rotatefilehook"
 	"github.com/spf13/cobra"
 )
 
-var prefix = "bankscraper"
-
 var configFileArg string
 var historyFileArg string
-var now string
 var debugFlag bool
 var headlessFlag bool
 
@@ -32,36 +30,40 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	cobra.OnInitialize(Initialize)
-	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file (default is ./%s.yaml)")
-	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file (default is ./%s-history.yaml)")
+	rootCmd.PersistentFlags().StringVar(&configFileArg, "config", "", "config file")
+	rootCmd.PersistentFlags().StringVar(&historyFileArg, "history", "", "history file")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "shwo debug messages")
 	rootCmd.PersistentFlags().BoolVar(&headlessFlag, "headless", true, "run browser in headless mode?")
+	cobra.OnInitialize(Initialize)
 }
 
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
 }
 
 func Initialize() {
 	InitLogger(nil)
-	store.NewConfig(configFileArg)
-	store.NewHistory(historyFileArg)
+	core.EnsureChromeExists()
+
+	store.InitialiseSchemas()
+	store.InitConfig(configFileArg)
+	store.InitHistory(configFileArg)
 }
 
-func InitLogger(hook log.Hook) {
-	formatter := log.TextFormatter{
+func InitLogger(hook logrus.Hook) {
+	formatter := logrus.TextFormatter{
 		DisableTimestamp: true,
 		ForceColors:      true,
 		PadLevelText:     true,
 	}
+	debugEnabled := debugFlag || os.Getenv(debugEnvVarName) == "true"
 
-	if os.Getenv(debugEnvVarName) == "true" {
-		log.SetReportCaller(true)
-		log.SetLevel(log.DebugLevel)
+	if debugEnabled {
+		logrus.SetReportCaller(true)
+		logrus.SetLevel(logrus.DebugLevel)
 		formatter.CallerPrettyfier = func(f *runtime.Frame) (string, string) {
 			s := strings.Split(f.Function, ".")
 			funcName := s[len(s)-1]
@@ -77,21 +79,18 @@ func InitLogger(hook log.Hook) {
 				MaxSize:    50,
 				MaxBackups: 7,
 				MaxAge:     30,
-				Level:      log.InfoLevel,
-				Formatter:  &log.JSONFormatter{},
+				Level:      logrus.InfoLevel,
+				Formatter:  &logrus.JSONFormatter{},
 			})
 			if err == nil {
-				log.AddHook(rotateFileHook)
+				logrus.AddHook(rotateFileHook)
 			}
 		}
 	}
-	if debugFlag {
-		log.SetLevel(log.DebugLevel)
-	}
 
-	log.SetFormatter(&formatter)
+	logrus.SetFormatter(&formatter)
 
 	if hook != nil {
-		log.AddHook(hook)
+		logrus.AddHook(hook)
 	}
 }

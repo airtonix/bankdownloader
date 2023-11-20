@@ -55,21 +55,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: OS Deps
-        uses: ./.github/actions/setup-os
-      
-      # Just let ASDF do its thing. It's far easier and more reliable than trying to do it ourselves.
-      - name: Tooling
-        uses: ./.github/actions/setup-tooling
-        with:
-          SetupCommand: ./setup.sh
+      - name: setup jetpack devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
-        with:
-          version: latest
-          args: release --rm-dist
         env:
           registry: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          devbox run -- gorelease release --rm-dist

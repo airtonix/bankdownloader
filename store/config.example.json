@@ -1,0 +1,31 @@
+{
+  "$schema": "./config-schema.json",
+  "sources": [
+    {
+      "type": "anz",
+      "config": {
+        "daysToFetch":731,
+        "domain": "mybank.com",
+        "format": "csv",
+        "outputTemplate": "mybank-{{.Account}}-{{.From}}-{{.To}}.csv",
+
+        "credentials": {
+          "type": "gopass",
+          "usernameKey": "myusername",
+          "passwordKey": "mypassword"
+        }
+
+      },
+      "accounts": [
+        {
+          "name": "myaccount",
+          "number": "1234567890",
+          "outputTemplate": "mybank/myaccount/{{.From}}-{{.To}}.csv"
+        }, {
+          "name": "myotheraccount",
+          "number": "0987654321"
+        }
+      ]
+    }
+  ]
+}

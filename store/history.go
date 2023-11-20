@@ -1,36 +1,40 @@
 package store
 
 import (
+	"fmt"
+	"os"
+	"path"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+
 	"errors"
 	"sort"
 	"time"
 
 	"dario.cat/mergo"
 	"github.com/airtonix/bank-downloaders/core"
-	"github.com/airtonix/bank-downloaders/schemas"
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 )
 
 type HistoryEvent struct {
-	Source          string `yaml:"source"`
-	LastDateFetched string `yaml:"lastDateFetched"`
-	AccountNumber   string `yaml:"accountNumber"`
+	Source          SourceType
+	LastDateFetched string
+	AccountNumber   string
 }
 
 type History struct {
-	Events []HistoryEvent `yaml:"events"`
+	Events []HistoryEvent
 }
 
 func (h *History) GetEvents(
-	source string,
+	sourceType SourceType,
 	accountNo string,
 ) []HistoryEvent {
 	events := []HistoryEvent{}
 
 	for _, event := range h.Events {
-		if event.Source == source && event.AccountNumber == accountNo {
+		if event.Source == sourceType && event.AccountNumber == accountNo {
 
 			// push event onto events
 			events = append(events, event)
@@ -40,12 +44,12 @@ func (h *History) GetEvents(
 }
 
 func (h *History) GetLatestEvent(
-	source string,
+	sourceType SourceType,
 	accountNo string,
 ) (HistoryEvent, error) {
 
 	events := h.GetEvents(
-		source,
+		sourceType,
 		accountNo,
 	)
 
@@ -67,46 +71,6 @@ func (h *History) GetLatestEvent(
 	return event, nil
 }
 
-type HistoryStrategy interface {
-	Strategy() strategy
-	ToString() string
-}
-
-const (
-	DaysAgo strategy = iota
-	SinceLastDownload
-)
-
-type strategy int
-
-// confirm that strategy implements HistoryStrategy
-var _ HistoryStrategy = strategy(0)
-
-func (h strategy) Strategy() strategy {
-	return h
-}
-func (h strategy) ToString() string {
-	switch h {
-	case DaysAgo:
-		return "days-ago"
-	case SinceLastDownload:
-		return "since-last-download"
-	default:
-		return "days-ago"
-	}
-}
-
-func NewHistoryStrategy(input string) strategy {
-	switch input {
-	case "days-ago":
-		return DaysAgo
-	case "since-last-download":
-		return SinceLastDownload
-	default:
-		return DaysAgo
-	}
-}
-
 // Calculate the next timeframe to download transactions for.
 //
 // Returns a tuple of `from` and `to` dates.
@@ -123,17 +87,16 @@ func NewHistoryStrategy(input string) strategy {
 //     If `lastDateFetched` is not available, it will default to `days-ago`.
 //     If `lastDateFetched` plus `daysToFetch` is beyond yesterday, it will default to yeserday.
 func (h *History) GetDownloadDateRange(
-	source string,
+	sourceType SourceType,
 	accountNo string,
 	daysToFetch int,
 	strategy HistoryStrategy,
 ) (time.Time, time.Time, error) {
-	var fromDate time.Time
-	var toDate time.Time
+	toDate := core.GetTodayMinusDays(1)
+	fromDate := core.GetDaysAgo(toDate, daysToFetch)
 
 	// Strategy: DaysAgo
 	if strategy.Strategy() == DaysAgo {
-		fromDate, toDate = h.GetDaysAgo(daysToFetch)
 		return fromDate, toDate, nil
 	}
 
@@ -141,14 +104,13 @@ func (h *History) GetDownloadDateRange(
 	if strategy.Strategy() == SinceLastDownload {
 		// try to detect a previously recorded event
 		event, err := h.GetLatestEvent(
-			source,
+			sourceType,
 			accountNo,
 		)
 
 		// if there's no event, use the default
 		if err != nil {
 			logrus.Debugln("No events found, using default")
-			fromDate, toDate = h.GetDaysAgo(daysToFetch)
 			return fromDate, toDate, nil
 		}
 
@@ -174,26 +136,22 @@ func (h *History) GetDownloadDateRange(
 	return fromDate, toDate, errors.New("Unable to calculate next date range")
 }
 
-func (this *History) GetDaysAgo(
-	daysToFetch int,
-) (time.Time, time.Time) {
-	toDate := core.GetTodayMinusDays(1)
-	fromDate := core.GetTodayMinusDays(daysToFetch)
-	return fromDate, toDate
-}
-
 // save the event
-func (this *History) SaveEvent(source string, accountNo string, toDate time.Time) {
+func (h *History) SaveEvent(
+	sourceType SourceType,
+	accountNo string,
+	toDate time.Time,
+) {
 	event := HistoryEvent{
-		Source:          source,
+		Source:          sourceType,
 		AccountNumber:   accountNo,
 		LastDateFetched: toDate.Format(time.RFC3339),
 	}
-	this.Events = append(this.Events, event)
-	this.Save()
+	h.Events = append(h.Events, event)
+	h.Save()
 }
 
-func (this *History) Save() error {
+func (h *History) Save() error {
 	var output History
 	var err error
 
@@ -210,95 +168,84 @@ func (this *History) Save() error {
 
 	err = mergo.Merge(
 		&output,
-		this,
+		h,
 		mergo.WithOverrideEmptySlice,
 	)
 	if core.AssertErrorToNilf("Problem preparing history to save: %w", err) {
 		return err
 	}
 
-	SaveYamlFile(output, historyFilePath)
+	// SaveYamlFile(output, historyFilePath)
 	return nil
 }
 
-// History Singleton
 var history History
-var historyFilePath string
-var defaultHistory = History{}
-var defaultHistoryTree = &yaml.Node{
-	Kind: yaml.DocumentNode,
-	Content: []*yaml.Node{
-		{
-			Kind: yaml.MappingNode,
-			Content: []*yaml.Node{
-				{
-					Kind:        yaml.ScalarNode,
-					Value:       "events",
-					HeadComment: "# yaml-language-server: $schema=https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/history.json",
-				},
-				{
-					Kind:    yaml.SequenceNode,
-					Content: []*yaml.Node{},
-				},
-			},
-		},
-	},
+
+func GetHistory() *History {
+	return &history
 }
 
-func NewHistory(filepathArg string) (History, error) {
-	filename := "history.yaml"
-	filepath := core.ResolveFileArg(
-		filepathArg,
-		"BANKDOWNLOADER_HISTORY",
-		filename,
-	)
+var historyReader *viper.Viper
 
-	err := mergo.Merge(
-		&history,
-		defaultHistory,
-		mergo.WithOverrideEmptySlice)
+func NewHistoryReader(configFileArg string) *viper.Viper {
+	reader := viper.New()
 
-	if core.AssertErrorToNilf("could not ensure default history values: %w", err) {
-		return history, err
+	var configFileName = "history"
+	var configFileExt = "json"
+	if configFileArg != "" {
+		// get the extension of the config file arg
+		configFileExt = strings.TrimLeft(path.Ext(configFileArg), ".")
+		configFileName = strings.TrimSuffix(configFileArg, path.Ext(configFileArg))
+	} else {
+		configFileArg = fmt.Sprintf("%s.%s", configFileName, configFileExt)
+	}
+	configFileDir := path.Dir(configFileArg)
+
+	reader.SetConfigName(configFileName) // name of config file (without extension)
+	reader.SetConfigType(configFileExt)  // REQUIRED if the config file does not have the extension in the name
+	reader.AddConfigPath(configFileDir)
+	reader.AddConfigPath(".")
+	reader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
+	reader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
+
+	reader.SetDefault("$schema", "https://raw.githubusercontent.com/airtonix/bankdownloader/master/schemas/history.json")
+
+	if err := reader.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// Config file not found; ignore error if desired
+		} else {
+			// Config file was found but another error was produced
+		}
 	}
 
-	if !core.FileExists(filepath) {
-		CreateDefaultHistory(filepath)
-	}
-
-	var historyObject History
-	err = LoadYamlFile[History](
-		filepath,
-		schemas.GetHistorySchema(),
-		&historyObject,
-	)
-	if core.AssertErrorToNilf("could not load history file: %w", err) {
-		return history, err
-	}
-	log.Info("history ready: ", filepath)
-
-	// store the history as a singleton
-	history = historyObject
-	historyFilePath = filepath
-
-	// also return it
-	return history, nil
+	return reader
 }
 
-func CreateDefaultHistory(historyFilePath string) History {
-	var defaultHistory History
-
-	log.Info("creating default config: ", configFilePath)
-
-	content, err := yaml.Marshal(defaultHistoryTree)
-	WriteFile(historyFilePath, content)
-
-	if core.AssertErrorToNilf("could not marshal default history: %w", err) {
-		return defaultHistory
+func CreateNewHistoryFile() {
+	// current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		logrus.Fatal(err)
 	}
-	return defaultHistory
+	historyFilePath := configReader.Get("config")
+	if historyFilePath == nil {
+		historyFilePath = fmt.Sprintf("%s/history.json", cwd)
+	}
+
+	// if the file exists, don't overwrite it
+	if _, err := os.Stat(historyFilePath.(string)); err == nil {
+		return
+	}
+
+	logrus.Infof("Creating new history file: %s", historyFilePath)
+	if err := historyReader.SafeWriteConfigAs(historyFilePath.(string)); err != nil {
+		logrus.Fatal(err)
+	}
 }
 
-func GetHistory() History {
-	return history
+func InitHistory(configFileArg string) {
+	historyReader = NewHistoryReader(configFileArg)
+	err := historyReader.Unmarshal(&history)
+	core.AssertErrorToNilf("could not unmarshal history: %w", err)
+	logrus.Debugln("history file", historyReader.ConfigFileUsed())
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/meta"
+	"github.com/sirupsen/logrus"
 )
 
 func EnsureLogFilePath() (string, error) {
@@ -30,6 +31,8 @@ func EnsureLogFilePath() (string, error) {
 	if core.AssertErrorToNilf("could not close log file: %w", err) {
 		return "", err
 	}
+
+	logrus.Debug("log file path: ", path)
 
 	return path, err
 }
