@@ -32,6 +32,8 @@ setup:
   go install github.com/ramya-rao-a/go-outline@latest
   go install github.com/stamblerre/gocode@v1.0.0
   go install github.com/rogpeppe/godef@v1.1.2
+  go install honnef.co/go/tools/cmd/staticcheck@latest
+  
   go get .
 
 ci:
