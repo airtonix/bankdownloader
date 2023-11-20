@@ -1,3 +1,0 @@
---bind
---artifact-server-path=./artifacts
--P ubuntu-22.04=catthehacker/ubuntu:full-20.04

@@ -2,6 +2,8 @@ BINARY_NAME := "bankdownloader"
 export REGISTRY := "ghcr.io"
 export IMAGE_NAME := "airtonix/bankdownloader"
 
+help:
+  @just --list
 
 dev *ARGS:
   go run . \
@@ -34,8 +36,12 @@ setup:
   
   go get .
 
-ci:
-  act push
+test_ci_build:
+  act push \
+    --platform ubuntu-22.04=catthehacker/ubuntu:full-latest \
+    --eventpath .actevent.json \
+    --workflows .github/workflows/release.yml \
+    --job Build
 
 docs:
   godocs -http=:6060
