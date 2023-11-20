@@ -2,9 +2,10 @@ package clients
 
 import (
 	"errors"
-	"path"
+	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/zalando/go-keyring"
 )
 
@@ -14,26 +15,19 @@ type KeychainSecretResolver struct {
 // ensure that KeychainSecretResolver implements the SecretsResolver interface
 var _ SecretsResolver = (*KeychainSecretResolver)(nil)
 
-// a keychan secret path is composed of `{secretname}/{username for secret}`
+// Get the service name and secret name from the secret path
 func (k *KeychainSecretResolver) getRequestArgs(secretpath string) (string, string) {
-	service, name := path.Split(secretpath)
+	parts := strings.Split(secretpath, "/")
+	service := parts[0]
+	name := parts[1]
 	return service, name
-}
-
-func (k *KeychainSecretResolver) get(secretpath string) (string, error) {
-	service, name := k.getRequestArgs(secretpath)
-	secret, err := keyring.Get(service, name)
-	if err != nil {
-		return "", err
-	}
-
-	return secret, nil
 }
 
 // Get the password for a given secret path
 func (k *KeychainSecretResolver) GetPassword(secretpath string) (string, error) {
-	secret, err := k.get(secretpath)
-
+	servicename, secretname := k.getRequestArgs(secretpath)
+	logrus.Infof("Getting password for %s/%s", servicename, secretname)
+	secret, err := keyring.Get(servicename, secretname)
 	if err != nil {
 		return "", err
 	}

@@ -162,9 +162,9 @@ func (c *CredentialsGopassTotpSource) SetTimestampFn(fn func() time.Time) {
 
 // CredentialsKeychain is a struct that contains the credentials for a source.
 type CredentialsKeychainSource struct {
-	UsernameKey string
-	PasswordKey string
-	Api         clients.KeychainSecretResolver
+	ServiceName string
+	Username    string
+	Api         *clients.KeychainSecretResolver
 }
 
 // ensure that CredentialsKeychain implements the ICredentials interface
@@ -172,11 +172,22 @@ var _ ICredentialsSource = (*CredentialsKeychainSource)(nil)
 
 func (c *CredentialsKeychainSource) Type() CredentialSourceType { return CredentialSourceTypeKeychain }
 func (c *CredentialsKeychainSource) Resolve() (ResolvedCredentials, error) {
+	secretpath := c.ServiceName + "/" + c.Username
+
+	username, err := c.Api.GetUsername(secretpath)
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get username for: %s", secretpath)
+	}
+
+	password, err := c.Api.GetPassword(secretpath)
+	if err != nil {
+		return ResolvedCredentials{}, fmt.Errorf("failed to get password for: %s", secretpath)
+	}
+
 	return ResolvedCredentials{
 		UsernameAndPassword: UsernameAndPassword{
-			// TODO: implement keychain integration
-			Username: os.Getenv(c.UsernameKey),
-			Password: os.Getenv(c.PasswordKey),
+			Username: username,
+			Password: password,
 		},
 		Type: c.Type(),
 	}, nil
@@ -247,8 +258,8 @@ func NewCredentials(source map[string]interface{}) Credentials {
 
 	case CredentialSourceTypeKeychain:
 		output.CredentialsKeychainSource = CredentialsKeychainSource{
-			UsernameKey: source["usernameKey"].(string),
-			PasswordKey: source["passwordKey"].(string),
+			ServiceName: source["serviceName"].(string),
+			Username:    source["username"].(string),
 		}
 		output.ResolvedCredentials, _ = output.CredentialsKeychainSource.Resolve()
 

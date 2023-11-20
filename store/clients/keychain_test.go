@@ -8,19 +8,19 @@ import (
 
 func TestKeychainClient(t *testing.T) {
 	store := NewMockKeychainSecretResolver(
-		"test",
 		[]MockStoredKeychainSecret{
 			{
-				Name:   "pathtosecret",
-				Secret: "somepassword",
+				Name:     "servicename",
+				Username: "someguy",
+				Password: "somepassword",
 			},
 		},
 	)
 	t.Logf("store: %v", store)
-	username, err := store.GetUsername("pathtosecret")
+	username, err := store.GetUsername("servicename/someguy")
 	assert.NoError(t, err)
-	assert.Equal(t, "pathtosecret", username)
-	password, err := store.GetPassword("pathtosecret")
+	assert.Equal(t, "someguy", username)
+	password, err := store.GetPassword("servicename/someguy")
 	assert.NoError(t, err)
 	assert.Equal(t, "somepassword", password)
 

@@ -64,3 +64,25 @@ func TestGopassTotpCredentials(t *testing.T) {
 	assert.Equal(t, "somepassword", resolved.UsernameAndPasswordAndTotp.Password)
 	assert.Equal(t, expectedToken, resolved.UsernameAndPasswordAndTotp.Totp)
 }
+
+func TestKeychainCredentials(t *testing.T) {
+	store := clients.NewMockKeychainSecretResolver([]clients.MockStoredKeychainSecret{
+		{
+			Name:     "pathtosecret",
+			Username: "someguy",
+			Password: "somepassword",
+		},
+	})
+
+	credentials := &CredentialsKeychainSource{
+		ServiceName: "pathtosecret",
+		Username:    "someguy",
+		Api:         store,
+	}
+
+	resolved, err := credentials.Resolve()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "someguy", resolved.UsernameAndPassword.Username)
+	assert.Equal(t, "somepassword", resolved.UsernameAndPassword.Password)
+}

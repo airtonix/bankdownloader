@@ -233,55 +233,6 @@
         "passwordKey"
       ]
     },
-    "credentials-gopass": {
-      "type": "object",
-      "description": "credentials that are read from gopass",
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "gopass"
-        },
-        "secret": {
-          "type": "string",
-          "minLength": 1
-        },
-        "usernameKey": {
-          "type": "string",
-          "minLength": 1
-        },
-        "passwordKey": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "secret"
-      ]
-    },
-    "credentials-keychain": {
-      "type": "object",
-      "description": "credentials that are read from the keychain",
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "keychain"
-        },
-        "usernameKey": {
-          "type": "string",
-          "minLength": 1
-        },
-        "passwordKey": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "usernameKey",
-        "passwordKey"
-      ]
-    },
     "credentials-env-totp": {
       "type": "object",
       "description": "credentials that are read from the environment",
@@ -308,6 +259,32 @@
         "usernameKey",
         "passwordKey",
         "totpKey"
+      ]
+    },
+    "credentials-gopass": {
+      "type": "object",
+      "description": "credentials that are read from gopass",
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "gopass"
+        },
+        "secret": {
+          "type": "string",
+          "minLength": 1
+        },
+        "usernameKey": {
+          "type": "string",
+          "minLength": 1
+        },
+        "passwordKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "secret"
       ]
     },
     "credentials-gopass-totp": {
@@ -337,35 +314,32 @@
       },
       "additionalProperties": false,
       "required": [
-        "secret",
+        "secret"
       ]
     },
-    "credentials-keychain-totp": {
+    "credentials-keychain": {
       "type": "object",
-      "description": "credentials that are read from the keychain",
+      "description": "credentials that are read from the keychain. Secrets in the keychain are stored against a service and a username. The stored value is ",
       "properties": {
         "type": {
           "type": "string",
-          "const": "keychain-totp"
+          "const": "keychain"
         },
-        "usernameKey": {
+        "serviceName": {
           "type": "string",
+          "description": "a keychain stores secrets for a service and a username, this is the name of the service.",
           "minLength": 1
         },
-        "passwordKey": {
+        "username": {
           "type": "string",
-          "minLength": 1
-        },
-        "totpKey": {
-          "type": "string",
+          "description": "a keychain stores secrets for a service and a username, this is the username field.",
           "minLength": 1
         }
       },
       "additionalProperties": false,
       "required": [
-        "usernameKey",
-        "passwordKey",
-        "totpKey"
+        "serviceName",
+        "username"
       ]
     }
   }
