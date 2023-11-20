@@ -10,6 +10,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gosimple/slug v1.13.1
 	github.com/kr/pretty v0.3.1
+	github.com/pquerna/otp v1.4.0
 	github.com/samber/lo v1.38.1
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
 	github.com/shopspring/decimal v1.3.1
@@ -18,6 +19,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
+	github.com/zalando/go-keyring v0.2.3
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )
 
@@ -53,13 +55,11 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 // indirect
-	github.com/pquerna/otp v1.4.0 // indirect
 	github.com/rs/zerolog v1.31.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/twpayne/go-pinentry v0.3.0 // indirect
 	github.com/urfave/cli/v2 v2.25.7 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	github.com/zalando/go-keyring v0.2.3 // indirect
 	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/term v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
@@ -73,7 +73,6 @@ require (
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/keybase/go-keychain v0.0.0-20230523030712-b5615109f100
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

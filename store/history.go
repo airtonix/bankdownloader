@@ -127,13 +127,13 @@ func (h *History) GetDownloadDateRange(
 
 		daysSinceLastEvent := core.GetDaysBetweenDates(fromDate, toDate)
 		if daysSinceLastEvent < 1 {
-			return fromDate, toDate, errors.New("Days since last event is less than 1")
+			return fromDate, toDate, errors.New("days since last event is less than 1")
 		}
 
 		return fromDate, toDate, nil
 	}
 
-	return fromDate, toDate, errors.New("Unable to calculate next date range")
+	return fromDate, toDate, errors.New("unable to calculate next date range")
 }
 
 // save the event
@@ -153,7 +153,6 @@ func (h *History) SaveEvent(
 
 func (h *History) Save() error {
 	var output History
-	var err error
 
 	// TODO: not sure how to merge the default history tree with the history object
 	// this throws an error that src and dest are not the same type
@@ -166,7 +165,7 @@ func (h *History) Save() error {
 	// 	return err
 	// }
 
-	err = mergo.Merge(
+	err := mergo.Merge(
 		&output,
 		h,
 		mergo.WithOverrideEmptySlice,
@@ -212,9 +211,9 @@ func NewHistoryReader(configFileArg string) *viper.Viper {
 
 	if err := reader.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
+			logrus.Errorf("History file not found: %s", configFileArg)
 		} else {
-			// Config file was found but another error was produced
+			logrus.Errorf("Problem reading history file: %s", err)
 		}
 	}
 

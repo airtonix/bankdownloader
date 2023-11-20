@@ -82,9 +82,10 @@ func NewConfigReader(configFileArg string) *viper.Viper {
 
 	if err := configReader.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
+			logrus.Errorf("Config file not found: %s", configFileArg)
 		} else {
 			// Config file was found but another error was produced
+			logrus.Fatalf("Error reading config file: %s", err)
 		}
 	}
 	return configReader

@@ -1,43 +1,23 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "act@0.2.53": {
-      "last_modified": "2023-11-02T13:29:18Z",
-      "resolved": "github:NixOS/nixpkgs/b644d97bda6dae837d577e28383c10aa51e5e2d2#act",
-      "source": "devbox-search",
-      "version": "0.2.53",
-      "systems": {
-        "aarch64-darwin": {
-          "store_path": "/nix/store/ga04imfs1f6rc39xpwmr7vmysv3v2jhk-act-0.2.53"
-        },
-        "aarch64-linux": {
-          "store_path": "/nix/store/aw6gwm902pk6vvjqyahnnf0cxqii8zyf-act-0.2.53"
-        },
-        "x86_64-darwin": {
-          "store_path": "/nix/store/9shph5zzdnfqk4lwqbyp6h4zwic01m3z-act-0.2.53"
-        },
-        "x86_64-linux": {
-          "store_path": "/nix/store/iqy6v3g8bilwcg3zvx2c0v27rqbj5fca-act-0.2.53"
-        }
-      }
-    },
-    "delve@1.21.0": {
+    "go-tools@2023.1.6": {
       "last_modified": "2023-10-25T20:49:13Z",
-      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#delve",
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#go-tools",
       "source": "devbox-search",
-      "version": "1.21.0",
+      "version": "2023.1.6",
       "systems": {
         "aarch64-darwin": {
-          "store_path": "/nix/store/iza4ncci28lym2b14myrcwpbg13csfm0-delve-1.21.0"
+          "store_path": "/nix/store/90715m1ypvck007fsrn1gdm0ab9bzx4a-go-tools-2023.1.6"
         },
         "aarch64-linux": {
-          "store_path": "/nix/store/7s37m8z5lbvwcy3c8rc3769cqc3dwd9w-delve-1.21.0"
+          "store_path": "/nix/store/728676i94g3ymn5q32r6d973ibdjzc2r-go-tools-2023.1.6"
         },
         "x86_64-darwin": {
-          "store_path": "/nix/store/s2zyazyw49l7zgnkixfydfcwq2v7gkgl-delve-1.21.0"
+          "store_path": "/nix/store/y8vwwl41maj4v1yfw7dncbdwssxzws0a-go-tools-2023.1.6"
         },
         "x86_64-linux": {
-          "store_path": "/nix/store/jawq0dr7rygs9li2wd1pplfj5gsk5ngz-delve-1.21.0"
+          "store_path": "/nix/store/5df6gjp8lv6ndixw58ayihc8394nfzq4-go-tools-2023.1.6"
         }
       }
     },
