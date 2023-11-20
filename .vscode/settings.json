@@ -1,3 +1,6 @@
 {
-  "gopls": { "ui.semanticTokens": true }
+  "gopls": {
+    "ui.semanticTokens": true
+  },
+  "go.diagnostic.vulncheck": "Imports"
 }
