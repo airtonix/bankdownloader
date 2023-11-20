@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/airtonix/bankdownloader/compare/v1.1.3...v1.2.0) (2023-11-20)
+
+
+### Features
+
+* create and upload snapshot builds to PR ([#20](https://github.com/airtonix/bankdownloader/issues/20)) ([4cf05bc](https://github.com/airtonix/bankdownloader/commit/4cf05bc2c3c801b135e681a5879c52298c72b114))
+* switch config to viper and support gopass  ([#16](https://github.com/airtonix/bankdownloader/issues/16)) ([dd66abd](https://github.com/airtonix/bankdownloader/commit/dd66abdd4ae08343b5d0065058bf15ecc966ea43))
+
 ## [1.1.3](https://github.com/airtonix/bankdownloader/compare/v1.1.2...v1.1.3) (2023-11-08)
 
 
