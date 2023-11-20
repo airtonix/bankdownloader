@@ -1,13 +1,19 @@
 package clients
 
-import "github.com/zalando/go-keyring"
+import (
+	"path"
+
+	"github.com/zalando/go-keyring"
+)
 
 type MockStoredKeychainSecret struct {
-	Name   string
+	// secretname/username
+	Name string
+	// password
 	Secret string
 }
 
-func MockKeychainResolver(
+func NewMockKeychainSecretResolver(
 	serviceName string,
 	secrets []MockStoredKeychainSecret,
 ) *KeychainSecretResolver {
@@ -15,7 +21,8 @@ func MockKeychainResolver(
 	keyring.MockInit()
 
 	for _, secret := range secrets {
-		keyring.Set(serviceName, secret.Name, secret.Secret)
+		name, username := path.Split(secret.Name)
+		keyring.Set(name, username, secret.Secret)
 	}
 
 	return NewKeychainResolver()

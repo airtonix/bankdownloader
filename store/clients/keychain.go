@@ -14,12 +14,7 @@ type KeychainSecretResolver struct {
 // ensure that KeychainSecretResolver implements the SecretsResolver interface
 var _ SecretsResolver = (*KeychainSecretResolver)(nil)
 
-type KeychainClientGetOptions struct {
-	version string
-	path    string
-}
-
-// a keychan secret path is composed of `{servicename}/{secretname}`
+// a keychan secret path is composed of `{secretname}/{username for secret}`
 func (k *KeychainSecretResolver) getRequestArgs(secretpath string) (string, string) {
 	service, name := path.Split(secretpath)
 	return service, name
@@ -35,6 +30,7 @@ func (k *KeychainSecretResolver) get(secretpath string) (string, error) {
 	return secret, nil
 }
 
+// Get the password for a given secret path
 func (k *KeychainSecretResolver) GetPassword(secretpath string) (string, error) {
 	secret, err := k.get(secretpath)
 
@@ -45,13 +41,16 @@ func (k *KeychainSecretResolver) GetPassword(secretpath string) (string, error) 
 	return secret, nil
 }
 
-// in a keychain the username is the entry name
+// Get the username for a given secret path
+// However, in a keychain the username is the secret path
 func (k *KeychainSecretResolver) GetUsername(secretpath string) (string, error) {
 	_, name := k.getRequestArgs(secretpath)
 	return name, nil
 }
 
-// not implemented. since not sure how to implement this
+// Get the OTP code. This is currently not implemented.
+// since not sure how to implement this in the context of a secret being a
+// record holding all the credentials for a given service.
 func (k *KeychainSecretResolver) GetOtp(name string, timestamp time.Time) (string, error) {
 	return "", errors.New("not implemented")
 }
