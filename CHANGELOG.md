@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/airtonix/bankdownloader/compare/v1.1.3...v1.2.0) (2023-11-20)
+
+
+### Features
+
+* switch config to viper and support gopass  ([#16](https://github.com/airtonix/bankdownloader/issues/16)) ([dd66abd](https://github.com/airtonix/bankdownloader/commit/dd66abdd4ae08343b5d0065058bf15ecc966ea43))
+
 ## [1.1.3](https://github.com/airtonix/bankdownloader/compare/v1.1.2...v1.1.3) (2023-11-08)
 
 
