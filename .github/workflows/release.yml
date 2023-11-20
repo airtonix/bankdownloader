@@ -8,12 +8,12 @@ permissions:
   pull-requests: write
   packages: write
   
-name: Release Management
+name: ReleaseManagement
 
 jobs:
   Release:
     name: Release Please
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       releases_created: ${{ steps.release.outputs.releases_created }}

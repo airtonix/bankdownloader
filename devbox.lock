@@ -1,6 +1,26 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "act@0.2.53": {
+      "last_modified": "2023-11-02T13:29:18Z",
+      "resolved": "github:NixOS/nixpkgs/b644d97bda6dae837d577e28383c10aa51e5e2d2#act",
+      "source": "devbox-search",
+      "version": "0.2.53",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/ga04imfs1f6rc39xpwmr7vmysv3v2jhk-act-0.2.53"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/aw6gwm902pk6vvjqyahnnf0cxqii8zyf-act-0.2.53"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/9shph5zzdnfqk4lwqbyp6h4zwic01m3z-act-0.2.53"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/iqy6v3g8bilwcg3zvx2c0v27rqbj5fca-act-0.2.53"
+        }
+      }
+    },
     "delve@1.21.0": {
       "last_modified": "2023-10-25T20:49:13Z",
       "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#delve",

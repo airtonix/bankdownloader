@@ -10,7 +10,7 @@ on:
 
 jobs:
   # DetectCheckboxes:
-  #   runs-on: ubuntu-latest
+  #   runs-on: ubuntu-22.04
   #   outputs:
   #     checked: ${{ steps.detect.outputs.checked }}
 
@@ -24,7 +24,7 @@ jobs:
 
   # PrintCheckboxes:
   #   needs: DetectCheckboxes
-  #   runs-on: ubuntu-latest
+  #   runs-on: ubuntu-22.04
 
   #   if: ${{ !github.event.act }}
 
@@ -33,7 +33,7 @@ jobs:
   #         echo ${{needs.detect.outputs.checked}}
 
   LintPrTitle:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       statuses: write
 
