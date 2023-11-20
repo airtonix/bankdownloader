@@ -21,7 +21,11 @@ func NewMockKeychainSecretResolver(
 	keyring.MockInit()
 
 	for _, secret := range secrets {
-		keyring.Set(secret.Name, secret.Username, secret.Password)
+		err := keyring.Set(secret.Name, secret.Username, secret.Password)
+		if err != nil {
+			logrus.Errorf("Failed to set keychain secret: %s", err)
+			continue
+		}
 		logrus.Infof("keychain: %s, username: %s, password: %s", secret.Name, secret.Username, secret.Password)
 	}
 
