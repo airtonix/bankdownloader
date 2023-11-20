@@ -16,7 +16,7 @@ release:
   goreleaser release --clean --skip-publish --snapshot --clean
 
 test:
-  for PACKAGE in $(go list ./...); do go test -v ${PACKAGE}; done;
+  for PACKAGE in $(go list ./...); do gotest -v ${PACKAGE}; done;
 
 lint:
   #!/bin/sh

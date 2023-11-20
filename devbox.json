@@ -5,6 +5,8 @@
     "just@1.16.0",
     "delve@1.21.0",
     "gopass@1.15.8",
-    "act@0.2.53"
+    "act@0.2.53",
+    "golangci-lint@1.55.2",
+    "gotest@0.0.6"
   ]
 }
