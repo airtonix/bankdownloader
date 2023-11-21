@@ -8,6 +8,10 @@ on:
       - edited
       - synchronize
 
+permissions:
+  contents: write
+  pull-requests: write
+      
 jobs:
   # DetectCheckboxes:
   #   runs-on: ubuntu-22.04
@@ -79,22 +83,13 @@ jobs:
       - name: Test
         run: devbox run -- just test
 
-      - name: Convert coverage to lcov
-        uses: jandelgado/gcov2lcov-action@v1
-        with:
-          infile: coverage.txt
-          outfile: coverage.lcov
-
-      - name: Coveralls
-        uses: coverallsapp/github-action@v1.1.2
-        with:
-          github-token: ${{ secrets.github_token }}
-          path-to-lcov: coverage.lcov
-
       - name: Remove Problem Matcher
         run: |
           echo "::remove-matcher owner=go::"
 
+      - name: Go Patch Coverage
+        uses: seriousben/go-patch-cover-action@v1.1.2
+  
       - name: Build  
         run: devbox run -- just build
 
