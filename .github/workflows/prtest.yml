@@ -1,0 +1,113 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+permissions:
+  contents: write
+  pull-requests: write
+      
+jobs:
+  # DetectCheckboxes:
+  #   runs-on: ubuntu-22.04
+  #   outputs:
+  #     checked: ${{ steps.detect.outputs.checked }}
+
+  #   if: ${{ !github.event.act }}
+
+  #   steps:
+  #     - uses: marocchino/checkbox-action@83deaedb2f6c61664cccd3f433984e210acbe304
+  #       id: detect
+  #       with:
+  #         action: 'detect'
+
+  # PrintCheckboxes:
+  #   needs: DetectCheckboxes
+  #   runs-on: ubuntu-22.04
+
+  #   if: ${{ !github.event.act }}
+
+  #   steps:
+  #     - run: |
+  #         echo ${{needs.detect.outputs.checked}}
+
+  PrTitle:
+    runs-on: ubuntu-22.04
+    permissions:
+      statuses: write
+
+    if: !github.event.act
+
+    steps:
+      - uses: aslafy-z/conventional-pr-title-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  LintAndTest:
+    runs-on: ubuntu-22.04
+
+    # don't bother running if the PR title is invalid
+    needs: [PrTitle]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@v4
+        with:
+          logger: pretty
+          planner: linux
+          extra-conf: experimental-features = ca-derivations fetch-closure
+          init: 'none'
+
+      - name: Install devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
+        env:
+          DEVBOX_DEBUG: 1
+        with:
+          skip-nix-installation: 'true'
+
+      - name: Install Problem Matcher
+        run: |
+          echo "::add-matcher::./.github/problem-matcher.json"
+
+      - name: Lint
+        run: devbox run -- just lint
+
+      - name: Test
+        run: devbox run -- just test
+
+      - name: Remove Problem Matcher
+        run: |
+          echo "::remove-matcher owner=go::"
+
+      - name: gcov2lcov-action
+        uses: jandelgado/gcov2lcov-action@v1.0.9
+        with:
+          infile: coverage.txt
+          outfile: coverage.lcov
+
+      - name: Code Coverage Reporter Action
+        uses: acid-chicken/code-coverage-reporter-action@v0.4.1
+        with:
+          lcov-file: ./coverage.lcov
+
+      - name: Build  
+        run: devbox run -- just build
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: |
+            dist/**/*
+            !dist/**/*.json
+            !dist/**/*.yaml
+
+      - name: Link Artifacts
+        uses: montogeek/github-action-comment-artifacts@1.0
