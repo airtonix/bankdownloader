@@ -11,7 +11,12 @@ on:
 permissions:
   contents: write
   pull-requests: write
-      
+
+# ensure only one PRTest check runs at a time
+concurrency:
+  group: prtest
+  cancel-in-progress: true
+
 jobs:
   # DetectCheckboxes:
   #   runs-on: ubuntu-22.04
