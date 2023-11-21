@@ -17,6 +17,9 @@ build:
 release:
   goreleaser release --clean --skip-publish --snapshot --clean
 
+publish:
+  goreleaser release --clean
+
 test:
   for PACKAGE in $(go list ./...); do gotest -v ${PACKAGE}; done;
 
@@ -38,7 +41,8 @@ setup:
 
 test_ci_build:
   act push \
-    --platform ubuntu-22.04=catthehacker/ubuntu:full-latest \
+    -s GITHUB_TOKEN="$(gh auth token)" \
+    --platform ubuntu-22.04=catthehacker/ubuntu:act-22.04 \
     --eventpath .actevent.json \
     --workflows .github/workflows/release.yml \
     --job Build
