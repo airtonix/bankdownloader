@@ -55,7 +55,8 @@ jobs:
         uses: jetpack-io/devbox-install-action@v0.7.0
       
       - name: add problem matcher
-        run: echo "##[add-matcher]::./.github/problem-matcher.json"
+        run: |
+          echo "##[add-matcher]./.github/problem-matcher.json"
 
       - name: Lint
         run: devbox run -- just lint
