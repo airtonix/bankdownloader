@@ -1,6 +1,26 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "act@0.2.54": {
+      "last_modified": "2023-11-19T17:46:56Z",
+      "resolved": "github:NixOS/nixpkgs/0bf3f5cf6a98b5d077cdcdb00a6d4b3d92bc78b5#act",
+      "source": "devbox-search",
+      "version": "0.2.54",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/z8zcipwlwd4lddhbxf5fgf7mjc02jnay-act-0.2.54"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/40csqr83gbjipja591b42x943l4nmss4-act-0.2.54"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/c94a76bssg80r62grl9yvdcilv9c08lv-act-0.2.54"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/g4834zf11rr214wfnbz6iy324bznf1nf-act-0.2.54"
+        }
+      }
+    },
     "go-tools@2023.1.6": {
       "last_modified": "2023-10-25T20:49:13Z",
       "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#go-tools",

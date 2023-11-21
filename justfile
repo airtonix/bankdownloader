@@ -2,6 +2,8 @@ BINARY_NAME := "bankdownloader"
 export REGISTRY := "ghcr.io"
 export IMAGE_NAME := "airtonix/bankdownloader"
 
+help:
+  @just --list
 
 dev *ARGS:
   go run . \
@@ -14,6 +16,9 @@ build:
 
 release:
   goreleaser release --clean --skip-publish --snapshot --clean
+
+publish:
+  goreleaser release --clean
 
 test:
   for PACKAGE in $(go list ./...); do gotest -v ${PACKAGE}; done;
@@ -34,8 +39,13 @@ setup:
   
   go get .
 
-ci:
-  act push
+test_ci_build:
+  act push \
+    -s GITHUB_TOKEN="$(gh auth token)" \
+    --platform ubuntu-22.04=catthehacker/ubuntu:act-22.04 \
+    --eventpath .actevent.json \
+    --workflows .github/workflows/release.yml \
+    --job Build
 
 docs:
   godocs -http=:6060
