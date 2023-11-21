@@ -32,12 +32,12 @@ jobs:
   #     - run: |
   #         echo ${{needs.detect.outputs.checked}}
 
-  LintPrTitle:
+  PrTitle:
     runs-on: ubuntu-22.04
     permissions:
       statuses: write
 
-    if: ${{ !github.event.act }}
+    if: !github.event.act
 
     steps:
       - uses: aslafy-z/conventional-pr-title-action@v3
@@ -46,15 +46,30 @@ jobs:
 
   LintAndTest:
     runs-on: ubuntu-22.04
-    steps:
 
+    # don't bother running if the PR title is invalid
+    needs: [PrTitle]
+
+    steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: setup jetpack devbox
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@v4
+        with:
+          logger: pretty
+          planner: linux
+          extra-conf: experimental-features = ca-derivations fetch-closure
+          init: 'none'
+
+      - name: Install devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
-      
-      - name: add problem matcher
+        env:
+          DEVBOX_DEBUG: 1
+        with:
+          skip-nix-installation: 'true'
+
+      - name: Install Problem Matcher
         run: |
           echo "::add-matcher::./.github/problem-matcher.json"
 
@@ -63,20 +78,21 @@ jobs:
 
       - name: Test
         run: devbox run -- just test
-
-      - name: Build
-        run: devbox run -- just build
-
-      - name: add problem matcher
+        
+      - name: Remove Problem Matcher
         run: |
           echo "::remove-matcher owner=go::"
 
-      - uses: actions/upload-artifact@v3
+      - name: Build  
+        run: devbox run -- just build
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
         with:
           path: |
             dist/**/*
             !dist/**/*.json
             !dist/**/*.yaml
 
-      - name: Post comment to pull request with its artifacts
+      - name: Link Artifacts
         uses: montogeek/github-action-comment-artifacts@1.0
