@@ -6,6 +6,6 @@
     "gopass@1.15.8",
     "go-tools@2023.1.6",
     "act@0.2.54",
-    "gotest@latest"
+    "gotest@0.0.6"
   ]
 }

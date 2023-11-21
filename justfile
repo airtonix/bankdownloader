@@ -12,16 +12,29 @@ dev *ARGS:
     {{ARGS}}
 
 build: 
-  goreleaser build --snapshot --clean
+  goreleaser build \
+    --snapshot \
+    --clean
 
 release:
-  goreleaser release --clean --skip-publish --snapshot --clean
+  goreleaser release \
+    --clean \
+    --skip-publish \
+    --snapshot \
+    --clean
 
 publish:
   goreleaser release --clean
 
 test:
-  for PACKAGE in $(go list ./...); do gotest -v ${PACKAGE}; done;
+  gotest -v \
+    -failfast \
+    -race \
+    -coverpkg=./... \
+    -covermode=atomic \
+    -coverprofile=coverage.txt \
+    ./...
+
 
 lint:
   go vet ./...

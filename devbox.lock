@@ -101,7 +101,7 @@
         }
       }
     },
-    "gotest@latest": {
+    "gotest@0.0.6": {
       "last_modified": "2023-11-19T17:46:56Z",
       "resolved": "github:NixOS/nixpkgs/0bf3f5cf6a98b5d077cdcdb00a6d4b3d92bc78b5#gotest",
       "source": "devbox-search",
