@@ -101,6 +101,26 @@
         }
       }
     },
+    "gotest@latest": {
+      "last_modified": "2023-11-19T17:46:56Z",
+      "resolved": "github:NixOS/nixpkgs/0bf3f5cf6a98b5d077cdcdb00a6d4b3d92bc78b5#gotest",
+      "source": "devbox-search",
+      "version": "0.0.6",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/hbaj4852lrcrid0nkyamx3xxq57ipmjg-gotest-0.0.6"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/zqm3n25239c2r6h4yaj5cnggqbpk4769-gotest-0.0.6"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/p5zgpig5qkpr1h0d2i52vl5n4k897m28-gotest-0.0.6"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/y5pbf3c3x5md4n902lcnxcq0xpfvzz7f-gotest-0.0.6"
+        }
+      }
+    },
     "just@1.16.0": {
       "last_modified": "2023-11-11T17:51:48Z",
       "resolved": "github:NixOS/nixpkgs/911ad1e67f458b6bcf0278fa85e33bb9924fed7e#just",
