@@ -87,9 +87,17 @@ jobs:
         run: |
           echo "::remove-matcher owner=go::"
 
-      - name: Go Patch Coverage
-        uses: seriousben/go-patch-cover-action@v1.1.2
-  
+      - name: gcov2lcov-action
+        uses: jandelgado/gcov2lcov-action@v1.0.9
+        with:
+          infile: coverage.txt
+          outfile: coverage.lcov
+
+      - name: Code Coverage Reporter Action
+        uses: acid-chicken/code-coverage-reporter-action@v0.4.1
+        with:
+          lcov-file: ./coverage.lcov
+
       - name: Build  
         run: devbox run -- just build
 
