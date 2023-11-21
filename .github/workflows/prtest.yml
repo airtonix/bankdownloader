@@ -46,7 +46,7 @@ jobs:
     permissions:
       statuses: write
 
-    if: !github.event.act
+    if: ${{ !github.event.act }}
 
     steps:
       - uses: aslafy-z/conventional-pr-title-action@v3
