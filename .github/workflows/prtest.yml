@@ -53,12 +53,10 @@ jobs:
           init: none
 
       - name: Install devbox
-        uses: jetpack-io/devbox-install-action@v0.7.0
+        uses: './.github/actions/install-devbox'
         env:
           DEVBOX_DEBUG: 1
-        with:
-          enable-cache: 'false'
-          skip-nix-installation: 'true'
+          NIX_INSTALLER_START_DAEMON: false
 
       - name: Print Google Chrome Info
         run: |
