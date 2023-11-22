@@ -79,6 +79,7 @@ jobs:
           # because nix installer thinks act images have systemd
           NIX_INSTALLER_START_DAEMON: false
         with:
+          enable-cache: 'false'
           skip-nix-installation: 'true'
 
       - name: Print Google Chrome Info
