@@ -21,6 +21,20 @@
         }
       }
     },
+    "chromium@119.0.6045.159": {
+      "last_modified": "2023-11-19T17:46:56Z",
+      "resolved": "github:NixOS/nixpkgs/0bf3f5cf6a98b5d077cdcdb00a6d4b3d92bc78b5#chromium",
+      "source": "devbox-search",
+      "version": "119.0.6045.159",
+      "systems": {
+        "aarch64-linux": {
+          "store_path": "/nix/store/ccdxn17fbi6idv83vm3fh0vl27yj2anf-chromium-119.0.6045.159"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/668sq7wki1rrvi4xl2f8hm5vm0w0m7b3-chromium-119.0.6045.159"
+        }
+      }
+    },
     "go-tools@2023.1.6": {
       "last_modified": "2023-10-25T20:49:13Z",
       "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#go-tools",

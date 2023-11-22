@@ -2,6 +2,9 @@ BINARY_NAME := "bankdownloader"
 export REGISTRY := "ghcr.io"
 export IMAGE_NAME := "airtonix/bankdownloader"
 
+default:
+  @just --choose
+
 help:
   @just --list
 
@@ -52,13 +55,16 @@ setup:
   
   go get .
 
-test_ci_build:
-  act push \
+workflow:="release"
+job:="Build"
+event:="push"
+test_ci_build :
+  act {{event}} \
     -s GITHUB_TOKEN="$(gh auth token)" \
     --platform ubuntu-22.04=catthehacker/ubuntu:act-22.04 \
     --eventpath .actevent.json \
-    --workflows .github/workflows/release.yml \
-    --job Build
+    --workflows .github/workflows/{{workflow}}.yml \
+    --job {{job}} 
 
 docs:
   godocs -http=:6060

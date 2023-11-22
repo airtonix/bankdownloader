@@ -1,4 +1,4 @@
-name: PR Checks
+name: PRChecks
 
 on:
   pull_request_target:
@@ -54,6 +54,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   LintAndTest:
+
     runs-on: ubuntu-22.04
 
     # don't bother running if the PR title is invalid
@@ -66,17 +67,25 @@ jobs:
       - name: Install nix
         uses: DeterminateSystems/nix-installer-action@v8
         with:
-          logger: pretty
-          planner: linux
+          logger: compact
           extra-conf: experimental-features = ca-derivations fetch-closure
-          init: 'none'
+          planner: linux
+          init: none
 
       - name: Install devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
         env:
           DEVBOX_DEBUG: 1
+          # because nix installer thinks act images have systemd
+          NIX_INSTALLER_START_DAEMON: false
         with:
           skip-nix-installation: 'true'
+
+      - name: Print Google Chrome Info
+        run: |
+          devbox run -- which chromium
+          devbox run -- chromium --version
+          devbox run -- chromium --product-version
 
       - name: Install Problem Matcher
         run: |
@@ -99,14 +108,17 @@ jobs:
           outfile: coverage.lcov
 
       - name: Code Coverage Reporter Action
+        if: ${{ !github.event.act }}
         uses: acid-chicken/code-coverage-reporter-action@v0.4.1
         with:
           lcov-file: ./coverage.lcov
+          
 
       - name: Build  
         run: devbox run -- just build
 
       - name: Upload Artifacts
+        if: ${{ !github.event.act }}
         uses: actions/upload-artifact@v3
         with:
           path: |
@@ -115,4 +127,5 @@ jobs:
             !dist/**/*.yaml
 
       - name: Link Artifacts
+        if: ${{ !github.event.act }}
         uses: montogeek/github-action-comment-artifacts@1.0

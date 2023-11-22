@@ -1,12 +1,12 @@
-name: PRTest Checks
+name: PRTestChecks
 
 on:
   pull_request:
-    types:
-      - opened
-      - reopened
-      - edited
-      - synchronize
+    # types:
+    #   - opened
+    #   - reopened
+    #   - edited
+    #   - synchronize
 
 permissions:
   contents: write
@@ -17,43 +17,24 @@ concurrency:
   group: prtest
   cancel-in-progress: true
 
+
 jobs:
-  # DetectCheckboxes:
-  #   runs-on: ubuntu-22.04
-  #   outputs:
-  #     checked: ${{ steps.detect.outputs.checked }}
-
-  #   if: ${{ !github.event.act }}
-
-  #   steps:
-  #     - uses: marocchino/checkbox-action@83deaedb2f6c61664cccd3f433984e210acbe304
-  #       id: detect
-  #       with:
-  #         action: 'detect'
-
-  # PrintCheckboxes:
-  #   needs: DetectCheckboxes
-  #   runs-on: ubuntu-22.04
-
-  #   if: ${{ !github.event.act }}
-
-  #   steps:
-  #     - run: |
-  #         echo ${{needs.detect.outputs.checked}}
 
   PrTitle:
     runs-on: ubuntu-22.04
     permissions:
       statuses: write
-
-    if: ${{ !github.event.act }}
-
+    
+      # if not using nekox/act and the user is airtonix, allow the action to run
+      
     steps:
       - uses: aslafy-z/conventional-pr-title-action@v3
+        if: ${{ !github.event.act }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   LintAndTest:
+
     runs-on: ubuntu-22.04
 
     # don't bother running if the PR title is invalid
@@ -66,18 +47,24 @@ jobs:
       - name: Install nix
         uses: DeterminateSystems/nix-installer-action@v8
         with:
-          logger: pretty
-          planner: linux
+          logger: compact
           extra-conf: experimental-features = ca-derivations fetch-closure
-          init: 'none'
+          planner: linux
+          init: none
 
       - name: Install devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
         env:
           DEVBOX_DEBUG: 1
+          NIX_INSTALLER_START_DAEMON: false
         with:
           skip-nix-installation: 'true'
-          enable-cache: false
+
+      - name: Print Google Chrome Info
+        run: |
+          devbox run -- which chromium
+          devbox run -- chromium --version
+          devbox run -- chromium --product-version
 
       - name: Install Problem Matcher
         run: |
@@ -100,14 +87,17 @@ jobs:
           outfile: coverage.lcov
 
       - name: Code Coverage Reporter Action
+        if: ${{ !github.event.act }}
         uses: acid-chicken/code-coverage-reporter-action@v0.4.1
         with:
           lcov-file: ./coverage.lcov
+          
 
       - name: Build  
         run: devbox run -- just build
 
       - name: Upload Artifacts
+        if: ${{ !github.event.act }}
         uses: actions/upload-artifact@v3
         with:
           path: |
@@ -116,4 +106,5 @@ jobs:
             !dist/**/*.yaml
 
       - name: Link Artifacts
+        if: ${{ !github.event.act }}
         uses: montogeek/github-action-comment-artifacts@1.0
