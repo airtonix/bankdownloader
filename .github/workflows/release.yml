@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   Release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -57,7 +57,7 @@ jobs:
     # dont run this locally, we can simulate it with nekos/act
     if: ${{ !needs.Release.outputs.releases_created && !github.event.act }}
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     
     permissions:
       statuses: write
@@ -70,7 +70,7 @@ jobs:
   Preview:
     if: !needs.Release.outputs.releases_created
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     needs: [Release]
 
     steps:
@@ -78,20 +78,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install nix
-        uses: DeterminateSystems/nix-installer-action@v8
-        with:
-          logger: pretty
-          planner: linux
-          extra-conf: experimental-features = ca-derivations fetch-closure
-          init: 'none'
-
-      - name: Install devbox
+      - name: setup jetpack devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
-        env:
-          DEVBOX_DEBUG: 1
-        with:
-          skip-nix-installation: 'true'
 
       - name: Install Problem Matcher
         run: |
@@ -139,7 +127,7 @@ jobs:
   Publish:
     if: ${{ !needs.Release.outputs.releases_created }}
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     needs: [Release]
 
     env:

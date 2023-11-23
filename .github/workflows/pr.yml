@@ -19,7 +19,7 @@ concurrency:
 
 jobs:
   # DetectCheckboxes:
-  #   runs-on: ubuntu-22.04
+  #   runs-on: ubuntu-20.04
   #   outputs:
   #     checked: ${{ steps.detect.outputs.checked }}
 
@@ -33,7 +33,7 @@ jobs:
 
   # PrintCheckboxes:
   #   needs: DetectCheckboxes
-  #   runs-on: ubuntu-22.04
+  #   runs-on: ubuntu-20.04
 
   #   if: ${{ !github.event.act }}
 
@@ -42,7 +42,7 @@ jobs:
   #         echo ${{needs.detect.outputs.checked}}
 
   PrTitle:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     permissions:
       statuses: write
 
@@ -55,7 +55,7 @@ jobs:
 
   LintAndTest:
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     # don't bother running if the PR title is invalid
     needs: [PrTitle]
@@ -64,19 +64,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install nix
-        uses: DeterminateSystems/nix-installer-action@v8
-        with:
-          logger: compact
-          extra-conf: experimental-features = ca-derivations fetch-closure
-          planner: linux
-          init: none
-
-      - name: Install devbox
-        uses: './.github/actions/install-devbox'
-        env:
-          DEVBOX_DEBUG: 1
-          NIX_INSTALLER_START_DAEMON: false
+      - name: setup jetpack devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
 
       - name: Print Google Chrome Info
         run: |
