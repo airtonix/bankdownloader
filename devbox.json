@@ -8,6 +8,7 @@
     "act@0.2.54",
     "gotest@0.0.6",
     "chromium@119.0.6045.159",
-    "chromedriver@119.0.6045.105"
+    "chromedriver@119.0.6045.105",
+    "jq@latest"
   ]
 }
