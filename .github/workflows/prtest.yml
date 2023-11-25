@@ -92,8 +92,31 @@ jobs:
             !dist/**/*.json
             !dist/**/*.yaml
 
+      - name: List Artifacts
+        id: list-artifacts
+        # make a list of files in the dist/ directory
+        # exclude from the list the following types of files: json files, yaml files, the dist/ directory itself, empty directories, symlinks, and txt files
+        run: |
+          files=$(find dist -type f -printf '%P\n'  | grep -v -E '\.json$|\.yaml$|^dist$|^$|->|\.txt$')
+          echo "files=${files}" >> $GITHUB_OUTPUT
+
       - name: Link Artifacts
         if: ${{ !github.event.act }}
-        uses: montogeek/github-action-comment-artifacts@1.0
+        uses: GrantBirki/comment@v2.0.8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          comment-id: artifact-preview-links
+          edit-mode: replace
+          vars: |
+            files: ${{ steps.list-artifacts.outputs.files }}
+          body: |
+            ### Preview Build
+
+            | Name | link |
+            {% for file in files.split(",") %}
+            | {{ file.name }} | {{ file.url }} |
+            {% else %}
+            - No file
+            {% endfor %}
+          
