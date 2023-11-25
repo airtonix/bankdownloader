@@ -71,28 +71,34 @@ jobs:
         uses: jandelgado/gcov2lcov-action@v1.0.9
         with:
           infile: coverage.txt
-          outfile: coverage.lcov
+          outfile: pr.lcov
 
       - name: Code Coverage Reporter Action
         if: ${{ !github.event.act }}
         uses: acid-chicken/code-coverage-reporter-action@v0.4.1
         with:
           delete-old-comments: true
-          lcov-file: ./coverage.lcov
+          lcov-file: ./pr.lcov
+          lcov-base: ./coverage.lcov
           
+      - name: commit coverage report
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: coverage.lcov
 
       - name: Build  
         run: devbox run -- just build
 
       - name: Upload Artifacts
         if: ${{ !github.event.act }}
-        uses: initdc/upload-artifact
+        uses: initdc/upload-artifact@feat/artifact-per-file
         with:
           artifact-per-file: true
           path: |
             dist/**/*
             !dist/**/*.json
             !dist/**/*.yaml
+
       - uses: beni69/artifact-link@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
