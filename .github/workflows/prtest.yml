@@ -87,7 +87,6 @@ jobs:
         if: ${{ !github.event.act }}
         uses: actions/upload-artifact@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           path: |
             dist/**/*
             !dist/**/*.json
@@ -96,3 +95,5 @@ jobs:
       - name: Link Artifacts
         if: ${{ !github.event.act }}
         uses: montogeek/github-action-comment-artifacts@1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
