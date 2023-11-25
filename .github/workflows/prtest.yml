@@ -77,6 +77,7 @@ jobs:
         if: ${{ !github.event.act }}
         uses: acid-chicken/code-coverage-reporter-action@v0.4.1
         with:
+          delete-old-comments: true
           lcov-file: ./coverage.lcov
           
 
@@ -92,3 +93,7 @@ jobs:
             dist/**/*
             !dist/**/*.json
             !dist/**/*.yaml
+      - uses: beni69/artifact-link@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          group: 'bankdownloader-v.*_(?<row>.+)_(?<col>.+).*$'
