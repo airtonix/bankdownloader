@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"sync"
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"github.com/sirupsen/logrus"
 )
@@ -18,48 +20,48 @@ import (
 type Automation struct {
 	Context context.Context
 	Cleanup context.CancelFunc
-	Cancel  context.CancelFunc
 }
 
 type AutomationOptionator func(*context.Context) context.Context
 
-func WithHeadless() AutomationOptionator {
-	return func(existingCtx *context.Context) context.Context {
+var (
+	allocCtx context.Context
+)
 
-		ctx, _ := chromedp.NewExecAllocator(
-			*existingCtx,
-			append(
-				chromedp.DefaultExecAllocatorOptions[:],
-				chromedp.Flag("headless", false),
-			)...,
-		)
-
-		return ctx
-	}
-}
+var allocateOnce sync.Once
 
 func NewAutomation(
 	options ...AutomationOptionator,
 ) *Automation {
-	ctx := context.Background()
+	// Start the browser exactly once, as needed.
+	allocateOnce.Do(func() {
+		ctx, _ := chromedp.NewExecAllocator(
+			context.Background(),
+			chromedp.Headless,
+			chromedp.NoSandbox,
+		)
 
-	// loop through options and execute against ctx
-	for _, optionator := range options {
-		ctx = optionator(&ctx)
-	}
+		allocCtx, _ = chromedp.NewContext(ctx)
 
-	ctx, cancel := chromedp.NewContext(
-		ctx,
-		chromedp.WithLogf(log.Printf),
-	)
+		logrus.Infof("Allocated context: %v", &allocCtx)
+
+		if err := chromedp.Run(allocCtx); err != nil {
+			logrus.Panic(err)
+		}
+
+		chromedp.ListenBrowser(allocCtx, func(ev interface{}) {
+			if ev, ok := ev.(*runtime.EventExceptionThrown); ok {
+				logrus.Panicf("%+v\n", ev.ExceptionDetails)
+			}
+		})
+	})
 
 	// create a timeout as a safety net to prevent any infinite wait loops
-	ctx, cleanup := context.WithTimeout(ctx, 60*time.Second)
+	ctx, cleanup := context.WithTimeout(allocCtx, 60*time.Second)
 
 	automation := &Automation{
 		Context: ctx,
 		Cleanup: cleanup,
-		Cancel:  cancel,
 	}
 
 	return automation
@@ -67,7 +69,6 @@ func NewAutomation(
 
 func (a *Automation) CloseBrowser() {
 	a.Cleanup()
-	// a.Cancel()
 }
 
 func (a *Automation) SetViewportSize(width int64, height int64) error {
@@ -86,9 +87,13 @@ func (a *Automation) SetViewportSize(width int64, height int64) error {
 
 func (a *Automation) GetLocation() url.URL {
 	var urlstr string
-	chromedp.Run(a.Context,
+	err := chromedp.Run(a.Context,
 		chromedp.Location(&urlstr),
 	)
+	if err != nil {
+		logrus.Errorln("Could not get location: ", err)
+		return url.URL{}
+	}
 	obj, err := url.Parse(urlstr)
 	if err != nil {
 		logrus.Errorln("Could not parse url: ", err)

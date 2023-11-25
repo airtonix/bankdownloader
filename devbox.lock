@@ -21,6 +21,23 @@
         }
       }
     },
+    "chromedriver@119.0.6045.105": {
+      "last_modified": "2023-11-19T17:46:56Z",
+      "resolved": "github:NixOS/nixpkgs/0bf3f5cf6a98b5d077cdcdb00a6d4b3d92bc78b5#chromedriver",
+      "source": "devbox-search",
+      "version": "119.0.6045.105",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/3g8yapv3idydwr7d9zqjk8wbv51y1s9s-chromedriver-119.0.6045.105"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/71ixx2j1zs6ycn865isc3k5x52g6j0vh-chromedriver-119.0.6045.105"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/c84cmy8n0yj7qvvnh82k7764a1wvy2lh-chromedriver-119.0.6045.105"
+        }
+      }
+    },
     "chromium@119.0.6045.159": {
       "last_modified": "2023-11-19T17:46:56Z",
       "resolved": "github:NixOS/nixpkgs/0bf3f5cf6a98b5d077cdcdb00a6d4b3d92bc78b5#chromium",

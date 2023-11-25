@@ -21,7 +21,7 @@ concurrency:
 jobs:
 
   PrTitle:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       statuses: write
     
@@ -35,7 +35,7 @@ jobs:
 
   LintAndTest:
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     # don't bother running if the PR title is invalid
     needs: [PrTitle]
@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: setup jetpack devbox
-        uses: jetpack-io/devbox-install-action@v0.7.0
+        uses: jetpack-io/devbox-install-action@v1
 
       - name: Print Google Chrome Info
         run: |

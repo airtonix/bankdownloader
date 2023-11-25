@@ -38,6 +38,8 @@ test:
     -coverprofile=coverage.txt \
     ./...
 
+concepts:
+  go run ./concepts
 
 lint:
   go vet ./...
@@ -61,7 +63,7 @@ event:="push"
 test_ci_build :
   act {{event}} \
     -s GITHUB_TOKEN="$(gh auth token)" \
-    --platform ubuntu-20.04=catthehacker/ubuntu:full-20.04 \
+    --platform ubuntu-latest=catthehacker/ubuntu:full-20.04 \
     --eventpath .actevent.json \
     --workflows .github/workflows/{{workflow}}.yml \
     --job {{job}} 
