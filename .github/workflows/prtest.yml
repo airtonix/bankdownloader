@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload Artifacts
         if: ${{ !github.event.act }}
-        uses: initdc/upload-artifact@feat/artifact-per-file
+        uses: airtonix/upload-artifact@artifact-per-file
         with:
           artifact-per-file: true
           path: |
