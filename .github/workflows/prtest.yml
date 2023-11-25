@@ -87,6 +87,7 @@ jobs:
         if: ${{ !github.event.act }}
         uses: actions/upload-artifact@v3
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           path: |
             dist/**/*
             !dist/**/*.json
