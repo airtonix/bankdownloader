@@ -1,0 +1,31 @@
+# composite action
+
+name: "changed"
+description: "Check if there are changes in the repository"
+
+outputs:
+  changed:
+    description: "true if there are changes, false otherwise"
+    value: ${{ steps.filter.outputs.changed }}
+
+runs:
+  using: "composite"
+
+  steps:
+
+    # use dorny/paths-filter to only run the job if the changes are in the src/ directory
+    - name: Filter Changes
+      uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          go: &go
+            - '**/*.go'
+            - '**/go.mod'
+            - '**/go.sum'
+          tooling: &tooling
+            - 'devbox.json'
+            - 'devbox.lock'
+          all:
+            - *go
+            - *tooling

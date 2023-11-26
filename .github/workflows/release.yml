@@ -11,6 +11,7 @@ permissions:
   packages: write
 
 jobs:
+
   Release:
     runs-on: ubuntu-20.04
 
@@ -52,77 +53,6 @@ jobs:
             echo "tag_name=${{ steps.release-please.outputs.tag_name }}" >> $GITHUB_OUTPUT
             echo "version=${{ steps.release-please.outputs.version }}" >> $GITHUB_OUTPUT
           fi
-
-  PrTitle:
-    # dont run this locally, we can simulate it with nekos/act
-    if: ${{ !needs.Release.outputs.releases_created && !github.event.act }}
-
-    runs-on: ubuntu-20.04
-    
-    permissions:
-      statuses: write
-
-    steps:
-      - uses: aslafy-z/conventional-pr-title-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  Preview:
-    if: !needs.Release.outputs.releases_created
-
-    runs-on: ubuntu-20.04
-    needs: [Release]
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: setup jetpack devbox
-        uses: jetpack-io/devbox-install-action@v0.7.0
-
-      - name: Install Problem Matcher
-        run: |
-          echo "::add-matcher::./.github/problem-matcher.json"
-
-      - name: Lint
-        run: devbox run -- just lint
-
-      - name: Test
-        run: devbox run -- just test
-
-      - name: Remove Problem Matcher
-        run: |
-          echo "::remove-matcher owner=go::"
-
-      - name: gcov2lcov-action
-        uses: jandelgado/gcov2lcov-action@v1.0.9
-        with:
-          infile: coverage.txt
-          outfile: coverage.lcov
-
-      - name: Code Coverage Reporter Action
-        uses: acid-chicken/code-coverage-reporter-action@v0.4.1
-        with:
-          lcov-file: ./coverage.lcov
-
-      - name: Build  
-        run: devbox run -- just build
-      
-      # dont run this locally, we can't simulate it with nekos/act
-      - name: Upload Artifacts
-        if: ${{ !github.event.act }} 
-        uses: actions/upload-artifact@v3
-        with:
-          path: |
-            dist/**/*
-            !dist/**/*.json
-            !dist/**/*.yaml
-
-      # dont run this locally, we can't simulate it with nekos/act
-      - name: Link Artifacts
-        if: ${{ !github.event.act }} 
-        uses: montogeek/github-action-comment-artifacts@1.0
       
   Publish:
     if: ${{ !needs.Release.outputs.releases_created }}
@@ -153,21 +83,9 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-    
-      - name: Install nix
-        uses: DeterminateSystems/nix-installer-action@v8
-        with:
-          logger: pretty
-          planner: linux
-          extra-conf: experimental-features = ca-derivations fetch-closure
-          init: 'none'
 
-      - name: Install devbox
+      - name: setup jetpack devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
-        env:
-          DEVBOX_DEBUG: 1
-        with:
-          skip-nix-installation: 'true'
           
       - name: Run GoReleaser
         env:

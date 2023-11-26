@@ -1,4 +1,4 @@
-name: PRTestChecks
+name: PrChecks
 
 on:
   pull_request_target:
@@ -20,6 +20,20 @@ concurrency:
 
 jobs:
 
+  Changes:
+      
+      runs-on: ubuntu-latest
+
+      outputs:
+        changed: ${{ steps.filter.outputs.changed }}
+  
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v3
+        - name: Changes Filter
+          id: filter
+          uses: ./.github/actions/changes-filter
+
   PrTitle:
     runs-on: ubuntu-latest
     permissions:
@@ -38,7 +52,9 @@ jobs:
     runs-on: ubuntu-latest
 
     # don't bother running if the PR title is invalid
-    needs: [PrTitle]
+    needs: [Changes, PrTitle]
+
+    if: ${{ needs.Changes.outputs.changed.go == 'true' }}
 
     steps:
       - name: Checkout
@@ -46,12 +62,6 @@ jobs:
 
       - name: setup jetpack devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
-
-      - name: Print Google Chrome Info
-        run: |
-          devbox run -- which chromium
-          devbox run -- chromium --version
-          devbox run -- chromium --product-version
 
       - name: Install Problem Matcher
         run: |
@@ -84,7 +94,23 @@ jobs:
       - name: commit coverage report
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          file_pattern: coverage.lcov
+          file_pattern: ./coverage.lcov
+
+  PreviewBuild:
+
+    runs-on: ubuntu-latest
+
+    # don't bother running if the PR title is invalid
+    needs: [Changes, PrTitle, LintAndTest]
+
+    if: ${{ needs.Changes.outputs.changed.go == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: setup jetpack devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
 
       - name: Build  
         run: devbox run -- just preview
