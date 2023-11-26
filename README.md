@@ -19,11 +19,9 @@ download bank transactions.
 
 ### Prerequisites
 
-`bank-downloader` makes use of playwright to automate a real browser.
+`bank-downloader` makes use of chromedp to automate a real browser.
 
-At the moment we use Firefox.
-
-This means you need to have [Firefox installed on your system](https://www.mozilla.org/en-US/firefox/new/)..
+This means you need to have google chrome, or chromium installed on your system.
 
 ## Configuration
 
@@ -43,6 +41,7 @@ sources:
     outputTemplate: "mybank-firstuser-{{.Account.NameSlug}}-{{.Account.NumberSlug}}-{{.FromDateUnix}}-{{.ToDateUnix}}.csv"
     daysToFetch: 7
     credentials:
+        type: file
         username: "myusername"
         password: "mypassword"
     accounts:
@@ -53,6 +52,7 @@ sources:
     outputTemplate: "mybank-seconduser-{{.Account.NameSlug}}-{{.Account.NumberSlug}}-{{.FromDateUnix}}-{{.ToDateUnix}}.csv"
     daysToFetch: 7
     credentials:
+        type: file
         username: "my-other-username"
         password: "my-other-password"
     accounts:
@@ -116,13 +116,20 @@ The number of days to fetch. Defaults to `7`.
 
 The credentials to use to log in to the bank.
 
-#### `source[].credentials.username`
+#### `source[].credentials.type`
 
-The username to use to log in to the bank.
+The type of credentials to use to log in to the bank. Currently only `file`, `gopass`, `env`, `gopass-otp`, `keychain` are supported.
 
-#### `source[].credentials.password`
+If `file` is used, the username and password are read from the `username` and `password` fields.
 
-The password to use to log in to the bank.
+If `gopass` is used, the username and password are read from gopass using the `usernameKey` and `passwordKey` fields, and the `gopass` binary must be installed.
+
+If `env` is used, the username and password are read from environment variables using the `usernameKey` and `passwordKey` fields.
+
+If `gopass-otp` is used, the username, password and otp are read from gopass using the `usernameKey`, `passwordKey` and `otpKey` fields, and the `gopass` binary must be installed.
+
+If `keychain` is used, the username and password are read from the keychain using the `usernameKey` and `passwordKey` fields. `keychain` is only [supported on osx, linux, bsd or windows](https://pkg.go.dev/github.com/zalando/go-keyring@v0.2.3).
+
 
 #### `source[].accounts`
 
@@ -176,7 +183,7 @@ The idea here is that with a `daysToFetch` of `60`, you can set up a scheduled t
 
 ## How it works
 
-`bank-downloader` uses [playwright](https://playwright.dev/) to automate a real browser.
+`bank-downloader` automates your installed instance of google chrome.
 
 1. logs in to the bank, 
 2. for each account:
