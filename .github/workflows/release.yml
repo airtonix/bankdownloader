@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: CreateOrUpdateRelease
         uses: google-github-actions/release-please-action@v3
-        if: !github.event.act
+        if: ${{ !github.event.act }}
         id: release-please
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -111,7 +111,7 @@ jobs:
       
       # dont run this locally, we can't simulate it with nekos/act
       - name: Upload Artifacts
-        if: !github.event.act 
+        if: ${{ !github.event.act }} 
         uses: actions/upload-artifact@v3
         with:
           path: |
@@ -121,7 +121,7 @@ jobs:
 
       # dont run this locally, we can't simulate it with nekos/act
       - name: Link Artifacts
-        if: !github.event.act 
+        if: ${{ !github.event.act }} 
         uses: montogeek/github-action-comment-artifacts@1.0
       
   Publish:
