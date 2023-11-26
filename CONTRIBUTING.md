@@ -14,7 +14,6 @@
 
 1. each bank will be supported by providing the following three files 
    1. `processors/bankname.go`
-   2. `processors/bankname_config.go`
    3. `processors/bankname_test.go`
 
 ### `processors/bankname.go`
