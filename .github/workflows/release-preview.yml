@@ -1,4 +1,4 @@
-name: ReleaseManagement
+name: ReleasePreview
 
 on:
   pull_request:
@@ -8,6 +8,11 @@ on:
 
 permissions:
   pull-requests: write
+
+  # ensure only one PRTest check runs at a time
+concurrency:
+  group: prtest
+  cancel-in-progress: true
 
 jobs:
   Changes:
