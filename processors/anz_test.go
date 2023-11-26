@@ -265,6 +265,8 @@ func MakeConfigurations(url string) (store.SourceConfig, store.UsernameAndPasswo
 }
 
 func TestAnzSourceLogin(t *testing.T) {
+	core.EnsureChromeExists()
+
 	var err error
 
 	s := MockServer(t)
@@ -285,6 +287,8 @@ func TestAnzSourceLogin(t *testing.T) {
 }
 
 func TestAnzSourceDownload(t *testing.T) {
+	core.EnsureChromeExists()
+
 	var err error
 
 	s := MockServer(t)

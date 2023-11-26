@@ -2,6 +2,9 @@ BINARY_NAME := "bankdownloader"
 export REGISTRY := "ghcr.io"
 export IMAGE_NAME := "airtonix/bankdownloader"
 
+default:
+  @just --choose
+
 help:
   @just --list
 
@@ -12,16 +15,50 @@ dev *ARGS:
     {{ARGS}}
 
 build: 
-  goreleaser build --snapshot --clean
+  goreleaser build \
+    --snapshot \
+    --clean
 
 release:
-  goreleaser release --clean --skip-publish --snapshot --clean
+  goreleaser release \
+    --clean \
+    --skip-publish \
+    --snapshot \
+    --clean
+preview:
+  #!/bin/bash
+  goreleaser release \
+    --clean \
+    --skip-publish \
+    --snapshot \
+    --clean
+
+  # find directories and remove them
+  find dist/ -mindepth 1 -type d \
+    | xargs rm -rf
+
+  # find all json/yaml/txt and remove them
+  find dist/ -type f \
+    -name '*.json' -or \
+    -name '*.yaml' -or \
+    -name '*.txt' \
+    | xargs rm -rf
+
 
 publish:
   goreleaser release --clean
 
 test:
-  for PACKAGE in $(go list ./...); do gotest -v ${PACKAGE}; done;
+  gotest -v \
+    -failfast \
+    -race \
+    -coverpkg=./... \
+    -covermode=atomic \
+    -coverprofile=coverage.txt \
+    ./...
+
+concepts:
+  go run ./concepts
 
 lint:
   go vet ./...
@@ -39,13 +76,16 @@ setup:
   
   go get .
 
-test_ci_build:
-  act push \
+workflow:="release"
+job:="Build"
+event:="push"
+test_ci_build :
+  act {{event}} \
     -s GITHUB_TOKEN="$(gh auth token)" \
-    --platform ubuntu-22.04=catthehacker/ubuntu:act-22.04 \
+    --platform ubuntu-latest=catthehacker/ubuntu:full-20.04 \
     --eventpath .actevent.json \
-    --workflows .github/workflows/release.yml \
-    --job Build
+    --workflows .github/workflows/{{workflow}}.yml \
+    --job {{job}} 
 
 docs:
   godocs -http=:6060

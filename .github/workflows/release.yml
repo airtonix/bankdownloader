@@ -1,3 +1,5 @@
+name: ReleaseManagement
+
 on:
   push:
     branches:
@@ -7,24 +9,22 @@ permissions:
   contents: write
   pull-requests: write
   packages: write
-  
-name: ReleaseManagement
-
 
 jobs:
   Release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
-    
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       releases_created: ${{ steps.release.outputs.releases_created }}
       tag_name: ${{ steps.release.outputs.tag_name }} # e.g. v1.0.0
       version: ${{ steps.release.outputs.version }} # e.g. 1.0.0
       json: ${{ toJSON(steps.release.outputs) }}
+
     steps:
-      - uses: google-github-actions/release-please-action@v3
-        if: ${{!github.event.act}}
+      - name: CreateOrUpdateRelease
+        uses: google-github-actions/release-please-action@v3
+        if: !github.event.act
         id: release-please
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -32,8 +32,14 @@ jobs:
           release-type: go
           extra-files: |
             meta/package.go
-      - id: release
-        name: act interop
+      
+      # this exists so we can faceroll this workflow locally with nekos/act
+      # remember that you need to:
+      # - have devbox installed
+      # - run `devbox shell` to get all the tooling installed
+      # - then you can run: `just test_ci_build`
+      - name: ReleasePleaseOrActInterop
+        id: release
         run: |
           if [ "${{!github.event.act}}" == "false" ]; then
             echo "release_created=true" >> $GITHUB_OUTPUT
@@ -47,10 +53,81 @@ jobs:
             echo "version=${{ steps.release-please.outputs.version }}" >> $GITHUB_OUTPUT
           fi
 
-  Build:
-    if: needs.Release.outputs.releases_created
+  PrTitle:
+    # dont run this locally, we can simulate it with nekos/act
+    if: ${{ !needs.Release.outputs.releases_created && !github.event.act }}
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
+    
+    permissions:
+      statuses: write
+
+    steps:
+      - uses: aslafy-z/conventional-pr-title-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  Preview:
+    if: !needs.Release.outputs.releases_created
+
+    runs-on: ubuntu-20.04
+    needs: [Release]
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: setup jetpack devbox
+        uses: jetpack-io/devbox-install-action@v0.7.0
+
+      - name: Install Problem Matcher
+        run: |
+          echo "::add-matcher::./.github/problem-matcher.json"
+
+      - name: Lint
+        run: devbox run -- just lint
+
+      - name: Test
+        run: devbox run -- just test
+
+      - name: Remove Problem Matcher
+        run: |
+          echo "::remove-matcher owner=go::"
+
+      - name: gcov2lcov-action
+        uses: jandelgado/gcov2lcov-action@v1.0.9
+        with:
+          infile: coverage.txt
+          outfile: coverage.lcov
+
+      - name: Code Coverage Reporter Action
+        uses: acid-chicken/code-coverage-reporter-action@v0.4.1
+        with:
+          lcov-file: ./coverage.lcov
+
+      - name: Build  
+        run: devbox run -- just build
+      
+      # dont run this locally, we can't simulate it with nekos/act
+      - name: Upload Artifacts
+        if: !github.event.act 
+        uses: actions/upload-artifact@v3
+        with:
+          path: |
+            dist/**/*
+            !dist/**/*.json
+            !dist/**/*.yaml
+
+      # dont run this locally, we can't simulate it with nekos/act
+      - name: Link Artifacts
+        if: !github.event.act 
+        uses: montogeek/github-action-comment-artifacts@1.0
+      
+  Publish:
+    if: ${{ !needs.Release.outputs.releases_created }}
+
+    runs-on: ubuntu-20.04
     needs: [Release]
 
     env:
@@ -58,14 +135,18 @@ jobs:
       IMAGE_NAME: ${{ github.repository }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
           fetch-tags: true
       
-      - name: Set up QEMU
+      - name: Setup QEMU
         uses: docker/setup-qemu-action@v2
-      - uses: docker/setup-buildx-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
       - name: Docker Login
         uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
         with:
@@ -73,15 +154,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
     
-      - name: Install nix in container
-        uses: DeterminateSystems/nix-installer-action@v4
+      - name: Install nix
+        uses: DeterminateSystems/nix-installer-action@v8
         with:
           logger: pretty
           planner: linux
           extra-conf: experimental-features = ca-derivations fetch-closure
           init: 'none'
 
-      - name: setup jetpack devbox
+      - name: Install devbox
         uses: jetpack-io/devbox-install-action@v0.7.0
         env:
           DEVBOX_DEBUG: 1

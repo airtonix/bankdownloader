@@ -1,12 +1,36 @@
-FROM jetpackio/devbox:latest
+FROM chromedp/headless-shell@sha256:b38a99ae6cf90a37f069de85fe45ececb041e9f0da03c58ca9ccb5018d845cd5
+
+# Step 1: Installing dependencies
+RUN apt-get update
+RUN apt-get -y install bash binutils git xz-utils wget sudo
+
+# Step 1.5: Setting up devbox user
+ENV DEVBOX_USER=devbox
+RUN adduser $DEVBOX_USER
+RUN usermod -aG sudo $DEVBOX_USER
+RUN echo "devbox ALL=(ALL:ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$DEVBOX_USER
+USER $DEVBOX_USER
+
+# Step 2: Installing Nix
+RUN wget --output-document=/dev/stdout https://nixos.org/nix/install | sh -s -- --no-daemon
+RUN . ~/.nix-profile/etc/profile.d/nix.sh
+
+ENV PATH="/home/${DEVBOX_USER}/.nix-profile/bin:$PATH"
+
+# Step 3: Installing devbox
+RUN wget --quiet --output-document=/dev/stdout https://get.jetpack.io/devbox   | bash -s -- -f
+RUN chown -R "${DEVBOX_USER}:${DEVBOX_USER}" /usr/local/bin/devbox
+
 
 # Installing your devbox project
 WORKDIR /code
+
 
 COPY devbox.json devbox.json
 COPY devbox.lock devbox.lock
 
 RUN sudo chown -R "${DEVBOX_USER}:${DEVBOX_USER}" /code
+
 RUN devbox run -- echo "Installed Packages."
 
 RUN devbox shellenv --init-hook >> ~/.profile

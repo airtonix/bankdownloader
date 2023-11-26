@@ -1,12 +1,12 @@
-name: PRChecks
+name: PRTestChecks
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - reopened
-      - edited
-      - synchronize
+  pull_request:
+    # types:
+    #   - opened
+    #   - reopened
+    #   - edited
+    #   - synchronize
 
 permissions:
   contents: write
@@ -17,45 +17,25 @@ concurrency:
   group: prtest
   cancel-in-progress: true
 
+
 jobs:
-  # DetectCheckboxes:
-  #   runs-on: ubuntu-20.04
-  #   outputs:
-  #     checked: ${{ steps.detect.outputs.checked }}
-
-  #   if: ${{ !github.event.act }}
-
-  #   steps:
-  #     - uses: marocchino/checkbox-action@83deaedb2f6c61664cccd3f433984e210acbe304
-  #       id: detect
-  #       with:
-  #         action: 'detect'
-
-  # PrintCheckboxes:
-  #   needs: DetectCheckboxes
-  #   runs-on: ubuntu-20.04
-
-  #   if: ${{ !github.event.act }}
-
-  #   steps:
-  #     - run: |
-  #         echo ${{needs.detect.outputs.checked}}
 
   PrTitle:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     permissions:
       statuses: write
-
-    if: ${{ !github.event.act }}
-
+    
+      # if not using nekox/act and the user is airtonix, allow the action to run
+      
     steps:
       - uses: aslafy-z/conventional-pr-title-action@v3
+        if: ${{ !github.event.act }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   LintAndTest:
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     # don't bother running if the PR title is invalid
     needs: [PrTitle]
@@ -91,27 +71,31 @@ jobs:
         uses: jandelgado/gcov2lcov-action@v1.0.9
         with:
           infile: coverage.txt
-          outfile: coverage.lcov
+          outfile: pr.lcov
 
       - name: Code Coverage Reporter Action
         if: ${{ !github.event.act }}
         uses: acid-chicken/code-coverage-reporter-action@v0.4.1
         with:
-          lcov-file: ./coverage.lcov
+          delete-old-comments: true
+          lcov-file: ./pr.lcov
+          lcov-base: ./coverage.lcov
           
+      - name: commit coverage report
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          file_pattern: coverage.lcov
 
       - name: Build  
-        run: devbox run -- just build
+        run: devbox run -- just preview
 
       - name: Upload Artifacts
         if: ${{ !github.event.act }}
-        uses: actions/upload-artifact@v3
+        uses: airtonix/upload-artifact@artifact-per-file
         with:
-          path: |
-            dist/**/*
-            !dist/**/*.json
-            !dist/**/*.yaml
+          artifact-per-file: true
+          path: dist/**/*
 
-      - name: Link Artifacts
-        if: ${{ !github.event.act }}
-        uses: montogeek/github-action-comment-artifacts@1.0
+      - uses: beni69/artifact-link@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
