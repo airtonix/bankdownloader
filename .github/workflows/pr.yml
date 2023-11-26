@@ -1,4 +1,4 @@
-name: PRTestChecks
+name: PrChecks
 
 on:
   pull_request_target:
