@@ -25,6 +25,25 @@ release:
     --skip-publish \
     --snapshot \
     --clean
+preview:
+  #!/bin/bash
+  goreleaser release \
+    --clean \
+    --skip-publish \
+    --snapshot \
+    --clean
+
+  # find directories and remove them
+  find dist/ -mindepth 1 -type d \
+    | xargs rm -rf
+
+  # find all json/yaml/txt and remove them
+  find dist/ -type f \
+    -name '*.json' -or \
+    -name '*.yaml' -or \
+    -name '*.txt' \
+    | xargs rm -rf
+
 
 publish:
   goreleaser release --clean

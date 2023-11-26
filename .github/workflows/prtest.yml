@@ -87,19 +87,16 @@ jobs:
           file_pattern: coverage.lcov
 
       - name: Build  
-        run: devbox run -- just build
+        run: devbox run -- just preview
 
       - name: Upload Artifacts
         if: ${{ !github.event.act }}
         uses: airtonix/upload-artifact@artifact-per-file
         with:
           artifact-per-file: true
-          path: |
-            dist/**/*
-            !dist/**/*.json
-            !dist/**/*.yaml
+          path: dist/**/*
 
       - uses: beni69/artifact-link@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          group: 'bankdownloader-v.*_(?<row>.+)_(?<col>.+).*$'
+          group: 'bankdownloader(-v.*)?_(?<row>.+)_(?<col>.+).*$'

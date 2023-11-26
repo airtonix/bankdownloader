@@ -74,10 +74,7 @@ nfpms:
     dependencies:
       - chromium
     file_name_template: >-
-      {{- trimsuffix .ConventionalFileName .ConventionalExtension -}}
-      {{- if and (eq .Arm "6") (eq .ConventionalExtension ".deb") }}6{{ end -}}
-      {{- if not (eq .Amd64 "v1")}}{{ .Amd64 }}{{ end -}}
-      {{- .ConventionalExtension -}}
+      {{ .ProjectName }}-{{ .Version }}_{{ .Os }}_{{ if eq .Arch "all" }}universal{{ else }}{{ .Arch }}{{ end }}{{ if .Arm }}v{{ .Arm }}{{ end }}{{ if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
 
 dockers:
   - image_templates:
