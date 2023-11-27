@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/airtonix/bankdownloader/compare/v1.2.1...v1.2.2) (2023-11-27)
+
+
+### Bug Fixes
+
+* corretions to workflows to ensure they run ([#29](https://github.com/airtonix/bankdownloader/issues/29)) ([06906ec](https://github.com/airtonix/bankdownloader/commit/06906ecc028fe1f05cd9fb400d137b0a3a0ae36c))
+
 ## [1.2.1](https://github.com/airtonix/bankdownloader/compare/v1.2.0...v1.2.1) (2023-11-27)
 
 
