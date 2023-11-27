@@ -54,7 +54,7 @@ jobs:
     # don't bother running if the PR title is invalid
     needs: [Changes, PrTitle]
 
-    if: ${{ needs.Changes.outputs.changed.go == 'true' }}
+    if: ${{ needs.Changes.outputs.changed.go }}
 
     steps:
       - name: Checkout
