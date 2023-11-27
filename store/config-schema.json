@@ -1,4 +1,6 @@
 {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/airtonix/bankdownloader/config-schema.json",
   "title": "Bank Downloader",
   "description": "Bank Downloader configuration",
   "type": "object",
@@ -132,6 +134,7 @@
       ],
       "additionalProperties": false
     },
+
     "anz-source-config": {
       "$ref": "#/$defs/generic-source-config"
     },
@@ -147,9 +150,7 @@
             "env",
             "gopass",
             "keychain",
-            "env-totp",
-            "gopass-totp",
-            "keychain-totp"
+            "gopass-totp"
           ]
         }
       },
@@ -174,19 +175,12 @@
           "allOf": [{"$ref": "#/$defs/credentials-keychain"}]
         },
         {
-          "properties": { "type": { "const": "env-totp" }},
-          "allOf": [{"$ref": "#/$defs/credentials-env-totp"}]
-        },
-        {
           "properties": { "type": { "const": "gopass-totp" }},
           "allOf": [{"$ref": "#/$defs/credentials-gopass-totp"}]
-        },
-        {
-          "properties": { "type": { "const": "keychain-totp" }},
-          "allOf": [{"$ref": "#/$defs/credentials-keychain-totp"}]
         }
       ]
     },
+
     "credentials-file": {
       "type": "object",
       "description": "credentials that are baked into the configuration file",
@@ -233,34 +227,7 @@
         "passwordKey"
       ]
     },
-    "credentials-env-totp": {
-      "type": "object",
-      "description": "credentials that are read from the environment",
-      "properties": {
-        "type": {
-          "type": "string",
-          "const": "env-totp"
-        },
-        "usernameKey": {
-          "type": "string",
-          "minLength": 1
-        },
-        "passwordKey": {
-          "type": "string",
-          "minLength": 1
-        },
-        "totpKey": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "usernameKey",
-        "passwordKey",
-        "totpKey"
-      ]
-    },
+
     "credentials-gopass": {
       "type": "object",
       "description": "credentials that are read from gopass",
