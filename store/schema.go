@@ -58,14 +58,20 @@ func (s itemsUniquePropertiesSchema) Validate(ctx jsonschema.ValidationContext, 
 
 //go:embed config-schema.json
 var ConfigSchemaJson string
-var configSchema *jsonschema.Schema
 
 //go:embed history-schema.json
 var HistorySchemaJson string
-var historySchema *jsonschema.Schema
 
-func InitialiseSchemas() {
-	var err error
+var schema *SchemaCompiler
+
+type SchemaCompiler struct {
+	compiler      *jsonschema.Compiler
+	configSchema  *jsonschema.Schema
+	historySchema *jsonschema.Schema
+}
+
+func NewSchemaCompiler() *SchemaCompiler {
+
 	c := jsonschema.NewCompiler()
 	c.RegisterExtension(
 		"itemsUniqueProperties",
@@ -73,26 +79,81 @@ func InitialiseSchemas() {
 		itemsUniquePropertiessCompiler{},
 	)
 
-	err = c.AddResource("config.json", strings.NewReader(ConfigSchemaJson))
-	if core.AssertErrorToNilf("could not add schemas/config.json: %w", err) {
-		logrus.Fatal(err)
-		return
+	compiler := &SchemaCompiler{
+		compiler:      c,
+		configSchema:  nil,
+		historySchema: nil,
 	}
-	configSchema = c.MustCompile("config.json")
-
-	err = c.AddResource("history.json", strings.NewReader(HistorySchemaJson))
-	if core.AssertErrorToNilf("could not add schemas/history.json: %w", err) {
-		logrus.Fatal(err)
-		return
+	return compiler
+}
+func (compiler *SchemaCompiler) RegisterConfigSchema() error {
+	var err error
+	compiler.configSchema, err = compiler.RegisterSchema(
+		"config-schema.json",
+		ConfigSchemaJson,
+	)
+	if err != nil {
+		return err
 	}
-	historySchema = c.MustCompile("history.json")
+	return nil
 
 }
 
-func GetConfigSchema() *jsonschema.Schema {
-	return configSchema
+func (compiler *SchemaCompiler) RegisterHistorySchema() error {
+	var err error
+
+	compiler.historySchema, err = compiler.RegisterSchema(
+		"history-schema.json",
+		HistorySchemaJson,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func GetHistorySchema() *jsonschema.Schema {
-	return historySchema
+// Register a schema with the compiler
+func (s *SchemaCompiler) RegisterSchema(
+	name string,
+	source string,
+) (*jsonschema.Schema, error) {
+	var output *jsonschema.Schema
+
+	err := s.compiler.AddResource(
+		name,
+		strings.NewReader(source),
+	)
+
+	if core.AssertErrorToNilf("could not add config-schema.json: %w", err) {
+		logrus.Fatal(err)
+		return nil, err
+	}
+
+	output = s.compiler.MustCompile("config-schema.json")
+
+	return output, nil
+}
+
+// Public API to bring the schema compiler to life
+func InitialiseSchemas() error {
+	var err error
+	compiler := NewSchemaCompiler()
+
+	err = compiler.RegisterConfigSchema()
+	if err != nil {
+		return err
+	}
+
+	err = compiler.RegisterHistorySchema()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Public API to get the schema compiler
+func GetSchema() *SchemaCompiler {
+	return schema
 }

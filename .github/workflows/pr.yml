@@ -14,7 +14,7 @@ permissions:
 
 # ensure only one PRTest check runs at a time
 concurrency:
-  group: prtest
+  group: ${{ github.head_ref }}
   cancel-in-progress: true
 
 
