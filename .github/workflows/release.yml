@@ -55,7 +55,7 @@ jobs:
           fi
       
   Publish:
-    if: ${{ !needs.Release.outputs.releases_created }}
+    if: ${{ needs.Release.outputs.releases_created }}
 
     runs-on: ubuntu-20.04
     needs: [Release]
