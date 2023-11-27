@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1](https://github.com/airtonix/bankdownloader/compare/v1.2.0...v1.2.1) (2023-11-27)
+
+
+### Bug Fixes
+
+* **ci:** only build changes if needed ([#26](https://github.com/airtonix/bankdownloader/issues/26)) ([b84e821](https://github.com/airtonix/bankdownloader/commit/b84e8210572b95c8ad40348baad7636b25b46069))
+* **CI:** use correct syntax for excluding ACT ([#24](https://github.com/airtonix/bankdownloader/issues/24)) ([cfb2d7e](https://github.com/airtonix/bankdownloader/commit/cfb2d7e083f774e886b353f9c5fc6d5f8fb45379))
+* ensure schema is loaded and add some tests ([#28](https://github.com/airtonix/bankdownloader/issues/28)) ([752494a](https://github.com/airtonix/bankdownloader/commit/752494a7ab7a6b7d7c83ef646dfacb2d8c254287))
+* update basic info ([#25](https://github.com/airtonix/bankdownloader/issues/25)) ([5c02981](https://github.com/airtonix/bankdownloader/commit/5c02981684db638dba3f61ec313608387c40e295))
+
 ## [1.2.0](https://github.com/airtonix/bankdownloader/compare/v1.1.3...v1.2.0) (2023-11-20)
 
 
