@@ -6,11 +6,12 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/store"
+	"github.com/airtonix/bank-downloaders/store/credentials"
 	"github.com/sirupsen/logrus"
 )
 
 type AnzProcessor struct {
-	Credentials store.UsernameAndPassword
+	Credentials credentials.UsernameAndPassword
 	store.SourceConfig
 	Processor
 	Automation *core.Automation
@@ -20,7 +21,6 @@ type AnzProcessor struct {
 var _ IProcessor = (*AnzProcessor)(nil)
 
 func (processor *AnzProcessor) Login() error {
-	var err error
 	loginDetails := processor.Credentials
 	url := fmt.Sprintf(
 		"%s/internetbanking",
@@ -33,9 +33,6 @@ func (processor *AnzProcessor) Login() error {
 
 	// start at the login page
 	automation.Goto(url)
-	core.AssertErrorToNilf(
-		fmt.Sprintf("could not goto: %s", url),
-		err)
 	automation.SetViewportSize(1200, 900)
 
 	logrus.Debugln("waiting for login page to load...")
@@ -98,8 +95,6 @@ func (processor *AnzProcessor) DownloadTransactions(
 	// otherwise we get a different set of selectors (we use the desktop version)
 	automation.SetViewportSize(1200, 900)
 
-	automation.Pause(100)
-
 	// find the account button
 	automation.Click(fmt.Sprintf(pageObjects.AccountsListAccountButton, accountNumber))
 
@@ -152,7 +147,9 @@ func (processor *AnzProcessor) DownloadTransactions(
 	filename, err := automation.DownloadFile(
 		filenameTemplate.Render(filenameContext),
 		func() error {
-			return automation.Click(pageObjects.ExportDownloadButton)
+			automation.Click(pageObjects.ExportDownloadButton)
+			// if we get this far it didn't panic
+			return nil
 		},
 	)
 	core.AssertErrorToNilf(
@@ -166,7 +163,7 @@ func (processor *AnzProcessor) DownloadTransactions(
 
 func NewAnzProcessor(
 	config store.SourceConfig,
-	credentials store.UsernameAndPassword,
+	credentials credentials.UsernameAndPassword,
 	automation *core.Automation,
 ) *AnzProcessor {
 	processor := Processor{

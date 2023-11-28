@@ -6,6 +6,7 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/store"
+	"github.com/airtonix/bank-downloaders/store/credentials"
 )
 
 type IProcessor interface {
@@ -24,7 +25,7 @@ type IProcessor interface {
 func GetProcecssorFactory(
 	processorName store.SourceType,
 	config store.SourceConfig,
-	credentials store.Credentials,
+	credentials credentials.Credentials,
 	automation *core.Automation,
 ) (IProcessor, error) {
 	var processor IProcessor

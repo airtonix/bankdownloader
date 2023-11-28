@@ -6,6 +6,7 @@ import (
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/processors"
 	"github.com/airtonix/bank-downloaders/store"
+	"github.com/airtonix/bank-downloaders/store/credentials"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -16,15 +17,21 @@ var downloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		history := store.GetHistory()
 		config := store.GetConfig()
+		headless, _ := cmd.Flags().GetBool("headless")
+		sandbox, _ := cmd.Flags().GetBool("sandbox")
 
-		automation := core.NewAutomation()
+		automation := core.NewAutomation(
+			core.WithHeadless(headless),
+			core.WithNoSandbox(sandbox),
+		)
+
 		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())
 		core.KeyValue("strategy", strategy.ToString())
 
 		core.Header("Downloading Transactions")
 
 		for _, item := range config.Sources {
-			credentials := store.NewCredentials(
+			credentials := credentials.NewCredentials(
 				item.Config.Credentials,
 			)
 
@@ -41,7 +48,7 @@ var downloadCmd = &cobra.Command{
 			core.KeyValue("source", item.Type)
 			core.KeyValue("accounts", len(item.Accounts))
 
-			core.Action("\nlogging in...")
+			core.Action("logging in...")
 			err = source.Login()
 			if core.AssertErrorToNilf("could not login: %w", err) {
 				continue

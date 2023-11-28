@@ -10,6 +10,7 @@ import (
 
 	"github.com/airtonix/bank-downloaders/core"
 	"github.com/airtonix/bank-downloaders/store"
+	"github.com/airtonix/bank-downloaders/store/credentials"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -30,11 +31,12 @@ func CreatePathLoggingMiddleware(t *testing.T) mux.MiddlewareFunc {
 }
 
 func MockServer(t *testing.T) *httptest.Server {
+	var err error
 	r := mux.NewRouter()
 	r.Use(CreatePathLoggingMiddleware(t))
 
 	tpl := template.New("root")
-	tpl.New("navbar").Parse(`'
+	_, err = tpl.New("navbar").Parse(`'
   <div data-test-id='navbar-container'>
     <nav>
       <ul>
@@ -45,8 +47,9 @@ func MockServer(t *testing.T) *httptest.Server {
     </nav>
   </div>
   `)
+	assert.NoError(t, err, "error")
 
-	tpl.New("login").Parse(`
+	_, err = tpl.New("login").Parse(`
     <html>
         <body>
             {{ template "navbar" }}
@@ -59,8 +62,9 @@ func MockServer(t *testing.T) *httptest.Server {
         </body>
     </html>
     `)
+	assert.NoError(t, err, "error")
 
-	tpl.New("accounts").Parse(`
+	_, err = tpl.New("accounts").Parse(`
     <html>
         <head>
           <style>
@@ -83,8 +87,9 @@ func MockServer(t *testing.T) *httptest.Server {
         </body>
     </html>
     `)
+	assert.NoError(t, err, "error")
 
-	tpl.New("account-detail").Parse(`
+	_, err = tpl.New("account-detail").Parse(`
     <html>
         <head>
           <style>
@@ -131,8 +136,9 @@ func MockServer(t *testing.T) *httptest.Server {
         </body>
     </html>
     `)
+	assert.NoError(t, err, "error")
 
-	tpl.New("download-transactions").Parse(`
+	_, err = tpl.New("download-transactions").Parse(`
     <html>
       <head>
             <style>
@@ -205,38 +211,45 @@ func MockServer(t *testing.T) *httptest.Server {
       </body>
     </html>
     `)
+	assert.NoError(t, err, "error")
 
 	// processors decide what the paths are.
 	r.HandleFunc("/internetbanking", func(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
-		tpl.ExecuteTemplate(w, "login", nil)
+		err := tpl.ExecuteTemplate(w, "login", nil)
+		assert.NoError(t, err, "error")
 	})
 
 	r.HandleFunc("/accounts", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		tpl.ExecuteTemplate(w, "accounts", nil)
+		err := tpl.ExecuteTemplate(w, "accounts", nil)
+		assert.NoError(t, err, "error")
 	})
 
 	r.HandleFunc("/accounts/{account}", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		w.WriteHeader(http.StatusOK)
-		tpl.ExecuteTemplate(w, "account-detail", vars)
+		err := tpl.ExecuteTemplate(w, "account-detail", vars)
+		assert.NoError(t, err, "error")
 	})
 
 	r.HandleFunc("/accounts/{account}/transactions", func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		w.WriteHeader(http.StatusOK)
-		tpl.ExecuteTemplate(w, "transactions", vars)
+		err := tpl.ExecuteTemplate(w, "transactions", vars)
+		assert.NoError(t, err, "error")
 	})
 
 	r.HandleFunc("/download-transactions", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		tpl.ExecuteTemplate(w, "download-transactions", nil)
+		err := tpl.ExecuteTemplate(w, "download-transactions", nil)
+		assert.NoError(t, err, "error")
 	})
 	r.HandleFunc("/search-transactions", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		tpl.ExecuteTemplate(w, "search-transactions", nil)
+		err := tpl.ExecuteTemplate(w, "search-transactions", nil)
+		assert.NoError(t, err, "error")
 		t.FailNow()
 	})
 
@@ -249,7 +262,7 @@ func MockServer(t *testing.T) *httptest.Server {
 	return s
 }
 
-func MakeConfigurations(url string) (store.SourceConfig, store.UsernameAndPassword) {
+func MakeConfigurations(url string) (store.SourceConfig, credentials.UsernameAndPassword) {
 	sourceConfig := store.SourceConfig{
 		Domain:         url,
 		ExportFormat:   "Agrimaster(CSV)",
@@ -257,7 +270,7 @@ func MakeConfigurations(url string) (store.SourceConfig, store.UsernameAndPasswo
 		DaysToFetch:    30,
 	}
 
-	credentials := store.UsernameAndPassword{
+	credentials := credentials.UsernameAndPassword{
 		Username: "username",
 		Password: "password",
 	}
@@ -272,7 +285,10 @@ func TestAnzSourceLogin(t *testing.T) {
 	s := MockServer(t)
 	logrus.SetLevel(logrus.DebugLevel)
 
-	automation := core.NewAutomation()
+	automation := core.NewAutomation(
+		core.WithHeadless(true),
+		core.WithNoSandbox(true),
+	)
 
 	sourceConfig, credentials := MakeConfigurations(s.URL)
 
@@ -294,13 +310,20 @@ func TestAnzSourceDownload(t *testing.T) {
 	s := MockServer(t)
 	defer s.Close()
 
-	automation := core.NewAutomation()
+	automation := core.NewAutomation(
+		core.WithHeadless(true),
+		core.WithNoSandbox(true),
+	)
 
 	sourceConfig, credentials := MakeConfigurations(s.URL)
 
 	source := NewAnzProcessor(sourceConfig, credentials, automation)
 	// start on accounts page
-	automation.Goto(s.URL + "/accounts")
+
+	assert.NotPanics(t, func() {
+		automation.Goto(s.URL + "/accounts")
+	})
+
 	downloaded, err := source.DownloadTransactions(
 		"My Account",
 		"123456789",

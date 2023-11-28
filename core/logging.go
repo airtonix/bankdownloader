@@ -25,7 +25,7 @@ func Header(message string) {
 
 func KeyValue(key string, value any) {
 	fmt.Printf(
-		"\t%s: %s\n",
+		"\n\t%s: %s\n",
 		color.FgYellow.Render(key),
 		color.FgWhite.Render(value),
 	)
@@ -33,7 +33,21 @@ func KeyValue(key string, value any) {
 
 func Action(name string) {
 	fmt.Printf(
-		"\t%s",
+		"\n\t%s \n",
 		color.FgGray.Render(name),
+	)
+}
+
+func Success(name string) {
+	fmt.Printf(
+		"\n\t%s \n",
+		color.FgGreen.Render(name),
+	)
+}
+
+func Failure(name string) {
+	fmt.Printf(
+		"\n\t%s \n",
+		color.FgRed.Render(name),
 	)
 }

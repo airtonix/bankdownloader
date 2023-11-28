@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/airtonix/bank-downloaders/core"
+	"github.com/kr/pretty"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -39,8 +40,9 @@ type Source struct {
 }
 
 type Configuration struct {
-	DateFormat string   `mapstructure:"dateformat"`
 	Sources    []Source `mapstructure:"sources"`
+	NoHeadless bool     `mapstructure:"noHeadless"`
+	Debug      bool     `mapstructure:"debug"`
 }
 
 var conf Configuration
@@ -57,14 +59,16 @@ func NewConfigReader(configFileArg string) *viper.Viper {
 	configReader.SetEnvPrefix(appname)
 	configReader.AutomaticEnv()
 	configReader.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-	configReader.BindEnv("config")
+	err := configReader.BindEnv("config")
+	core.AssertErrorToNilf("could not bind env: %w", err)
 
 	var configFileName = "config"
 	var configFileExt = "json"
 	if configFileArg != "" {
 		// get the extension of the config file arg
 		configFileExt = strings.TrimLeft(path.Ext(configFileArg), ".")
-		configFileName = strings.TrimSuffix(configFileArg, path.Ext(configFileArg))
+		// get the filename only from the path
+		configFileName = strings.TrimSuffix(path.Base(configFileArg), path.Ext(configFileArg))
 	} else {
 		configFileArg = fmt.Sprintf("%s.%s", configFileName, configFileExt)
 	}
@@ -73,7 +77,7 @@ func NewConfigReader(configFileArg string) *viper.Viper {
 	// lower case the name of the config file
 	configReader.SetConfigName(configFileName)                           // name of config file (without extension)
 	configReader.SetConfigType(configFileExt)                            // REQUIRED if the config file does not have the extension in the name
-	configReader.AddConfigPath(configFileDir)                            // optionally look for config in the working directory
+	configReader.AddConfigPath(configFileDir)                            // optionally look for config in the directory of the arg
 	configReader.AddConfigPath(".")                                      // optionally look for config in the working directory
 	configReader.AddConfigPath(fmt.Sprintf("$HOME/.config/%s", appname)) // call multiple times to add many search paths
 	configReader.AddConfigPath(fmt.Sprintf("/etc/%s/", appname))         // path to look for the config file in
@@ -82,12 +86,13 @@ func NewConfigReader(configFileArg string) *viper.Viper {
 
 	if err := configReader.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			logrus.Errorf("Config file not found: %s", configFileArg)
+			logrus.Errorf("Config file not found: %s", configReader.ConfigFileUsed())
 		} else {
 			// Config file was found but another error was produced
-			logrus.Fatalf("Error reading config file: %s", err)
+			logrus.Fatalf("Error reading config file: %s \n %s", configReader.ConfigFileUsed(), err)
 		}
 	}
+	logrus.Debugf("%s", pretty.Sprint(configReader.AllSettings()))
 	return configReader
 }
 
@@ -104,6 +109,7 @@ func CreateNewConfigFile() {
 
 	// if the file exists, don't overwrite it
 	if _, err := os.Stat(configFilePath.(string)); err == nil {
+		logrus.Info("Config file already exists, skipping creation")
 		return
 	}
 
@@ -116,7 +122,13 @@ func CreateNewConfigFile() {
 func InitConfig(configFileArg string) {
 	configReader = NewConfigReader(configFileArg)
 	err := configReader.Unmarshal(&conf)
+	conf.Debug = configReader.GetBool("debug")
+	conf.NoHeadless = configReader.GetBool("noHeadless")
 
 	core.AssertErrorToNilf("could not unmarshal config: %w", err)
 	logrus.Debugln("config file", configReader.ConfigFileUsed())
+}
+
+func GetConfigStore() *viper.Viper {
+	return configReader
 }

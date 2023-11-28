@@ -20,6 +20,7 @@ import (
 type Automation struct {
 	Context context.Context
 	Cleanup context.CancelFunc
+	Delay   time.Duration
 }
 
 type AutomationOptionator func(*context.Context) context.Context
@@ -27,6 +28,34 @@ type AutomationOptionator func(*context.Context) context.Context
 var (
 	allocCtx context.Context
 )
+
+func WithHeadless(yesno bool) AutomationOptionator {
+	return func(ctx *context.Context) context.Context {
+		if !yesno {
+			return *ctx
+		}
+
+		output, _ := chromedp.NewExecAllocator(
+			*ctx,
+			chromedp.Headless,
+		)
+		return output
+	}
+}
+
+func WithNoSandbox(yesno bool) AutomationOptionator {
+	return func(ctx *context.Context) context.Context {
+		if !yesno {
+			return *ctx
+		}
+
+		output, _ := chromedp.NewExecAllocator(
+			*ctx,
+			chromedp.NoSandbox,
+		)
+		return output
+	}
+}
 
 var allocateOnce sync.Once
 
@@ -37,8 +66,6 @@ func NewAutomation(
 	allocateOnce.Do(func() {
 		ctx, _ := chromedp.NewExecAllocator(
 			context.Background(),
-			chromedp.Headless,
-			chromedp.NoSandbox,
 		)
 
 		allocCtx, _ = chromedp.NewContext(ctx)
@@ -62,6 +89,7 @@ func NewAutomation(
 	automation := &Automation{
 		Context: ctx,
 		Cleanup: cleanup,
+		Delay:   200 * time.Millisecond,
 	}
 
 	return automation
@@ -71,7 +99,7 @@ func (a *Automation) CloseBrowser() {
 	a.Cleanup()
 }
 
-func (a *Automation) SetViewportSize(width int64, height int64) error {
+func (a *Automation) SetViewportSize(width int64, height int64) {
 	logrus.Debugf("Setting viewport size to: %dx%d", width, height)
 	err := chromedp.Run(a.Context,
 		chromedp.Sleep(100*time.Millisecond),
@@ -82,7 +110,6 @@ func (a *Automation) SetViewportSize(width int64, height int64) error {
 		fmt.Sprintf("could not set viewport size: %dx%d", width, height),
 		err)
 
-	return err
 }
 
 func (a *Automation) GetLocation() url.URL {
@@ -103,14 +130,13 @@ func (a *Automation) GetLocation() url.URL {
 	return *obj
 }
 
-func (a *Automation) Goto(url string) error {
+func (a *Automation) Goto(url string) {
 	logrus.Debugf("Going to %s", url)
 
 	// Navigate to the url and wait for the url to change
 	err := chromedp.Run(a.Context,
-		chromedp.Sleep(100*time.Millisecond),
+		chromedp.Sleep(a.Delay),
 		chromedp.Navigate(url),
-		chromedp.WaitVisible("body"),
 	)
 
 	AssertErrorToNilf(
@@ -118,14 +144,12 @@ func (a *Automation) Goto(url string) error {
 		err)
 
 	logrus.Debugf("Went to %s", url)
-
-	return err
 }
 
-func (a *Automation) Find(selector string) error {
+func (a *Automation) Find(selector string) {
 	logrus.Debugf("Looking for %s", selector)
 	err := chromedp.Run(a.Context,
-		chromedp.Sleep(100*time.Millisecond),
+		chromedp.Sleep(a.Delay),
 		chromedp.WaitVisible(selector),
 	)
 
@@ -134,13 +158,12 @@ func (a *Automation) Find(selector string) error {
 		err)
 	logrus.Debugf("Found %s", selector)
 
-	return err
 }
 
-func (a *Automation) Click(selector string) error {
+func (a *Automation) Click(selector string) {
 	logrus.Debugf("Clicking %s", selector)
 	err := chromedp.Run(a.Context,
-		chromedp.Sleep(100*time.Millisecond),
+		chromedp.Sleep(a.Delay),
 		chromedp.Click(selector),
 	)
 
@@ -148,14 +171,12 @@ func (a *Automation) Click(selector string) error {
 		fmt.Sprintf("could not click: %s", selector),
 		err)
 	logrus.Debugf("Clicked %s", selector)
-
-	return err
 }
 
-func (a *Automation) Focus(selector string) error {
+func (a *Automation) Focus(selector string) {
 	logrus.Debugf("Focusing %s", selector)
 	err := chromedp.Run(a.Context,
-		chromedp.Sleep(100*time.Millisecond),
+		chromedp.Sleep(a.Delay),
 		chromedp.Focus(selector),
 	)
 
@@ -164,16 +185,15 @@ func (a *Automation) Focus(selector string) error {
 		err)
 
 	logrus.Debugf("Focused %s", selector)
-	return err
 }
 
-func (a *Automation) Fill(selector string, value string) error {
+func (a *Automation) Fill(selector string, value string) {
 	logrus.Debugf("Filling %s with %s", selector, value)
 	err := chromedp.Run(a.Context,
-		chromedp.Sleep(100*time.Millisecond),
+		chromedp.Sleep(a.Delay),
 		chromedp.WaitVisible(selector),
-		chromedp.Sleep(1000),
-		chromedp.SetValue(selector, value),
+		chromedp.Sleep(a.Delay),
+		chromedp.SendKeys(selector, value),
 	)
 
 	AssertErrorToNilf(
@@ -182,16 +202,17 @@ func (a *Automation) Fill(selector string, value string) error {
 
 	logrus.Debugf("Filled %s with %s", selector, value)
 
-	return err
 }
 
-func (a *Automation) FillSensitive(selector string, value string) error {
+func (a *Automation) FillSensitive(selector string, value string) {
 	// make a string of stars the same length as the value
 	stars := Stars(value)
 	logrus.Debugf("Filling %s with %s", selector, stars)
 	err := chromedp.Run(a.Context,
-		chromedp.Sleep(100*time.Millisecond),
-		chromedp.SetValue(selector, value),
+		chromedp.Sleep(a.Delay),
+		chromedp.WaitVisible(selector),
+		chromedp.Sleep(a.Delay),
+		chromedp.SendKeys(selector, value),
 	)
 
 	AssertErrorToNilf(
@@ -199,11 +220,9 @@ func (a *Automation) FillSensitive(selector string, value string) error {
 		err)
 
 	logrus.Debugf("Filled %s with %s", selector, stars)
-
-	return err
 }
 
-func (a *Automation) Pause(ms int) error {
+func (a *Automation) Pause(ms int) {
 	logrus.Debugf("Pausing for %d sec", ms)
 	err := chromedp.Run(a.Context,
 		chromedp.Sleep(time.Duration(ms)*time.Millisecond),
@@ -215,7 +234,6 @@ func (a *Automation) Pause(ms int) error {
 
 	logrus.Debugf("Paused for %d sec", ms)
 
-	return err
 }
 
 func (a *Automation) DownloadFile(

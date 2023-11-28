@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/airtonix/bank-downloaders/core"
 	"github.com/gopasspw/gopass/pkg/gopass"
 	"github.com/gopasspw/gopass/pkg/gopass/api"
 	"github.com/gopasspw/gopass/pkg/otp"
 	potp "github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
+	"github.com/sirupsen/logrus"
 )
 
 // Gopass Client
@@ -54,6 +55,8 @@ func (g *GopassSecretResolver) get(options GopassClientGetOptions) (gopass.Secre
 }
 
 func (g *GopassSecretResolver) GetPassword(path string) (string, error) {
+	logrus.Debugf("Gopass: resolving password (%s)", path)
+
 	secret, err := g.get( /*options*/
 		GopassClientGetOptions{
 			version: "latest",
@@ -71,6 +74,8 @@ func (g *GopassSecretResolver) GetPassword(path string) (string, error) {
 }
 
 func (g *GopassSecretResolver) GetUsername(path string) (string, error) {
+	logrus.Debugf("Gopass: resolving username (%s)", path)
+
 	secret, err := g.get( /*options*/
 		GopassClientGetOptions{
 			version: "latest",
@@ -113,10 +118,9 @@ func NewGopassResolver() *GopassSecretResolver {
 
 	ctx := context.Background()
 	store, err := api.New(ctx)
-	if err != nil {
-		fmt.Printf("Failed to initialize gopass API: %s\n", err)
-		os.Exit(1)
-	}
+	core.AssertErrorToNilf("failed to create gopass store: %s", err)
+	available, _ := store.List(ctx)
+	logrus.Debugf("Gopass: created store: %+v", available)
 
 	return CreateResolver(store, ctx)
 }
