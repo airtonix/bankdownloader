@@ -300,7 +300,7 @@ func (a *Automation) DownloadFile(
 
 	// check if the file exists
 	if _, err := a.Fs.GetFs().Stat(downloadedPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("could not download file: %s", downloadedPath)
+		return "", fmt.Errorf("could find downloaded file: %s", downloadedPath)
 	}
 
 	// move the file to the expected location
