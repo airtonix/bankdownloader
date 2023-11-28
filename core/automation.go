@@ -3,12 +3,11 @@ package core
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
 	"path"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/chromedp/cdproto/browser"
@@ -18,79 +17,99 @@ import (
 )
 
 type Automation struct {
-	Context context.Context
-	Cleanup context.CancelFunc
-	Delay   time.Duration
+	Context          context.Context
+	AllocatorOptions []chromedp.ExecAllocatorOption
+	Cleanup          context.CancelFunc
+	Delay            time.Duration
+	Fs               Filesystem
 }
 
-type AutomationOptionator func(*context.Context) context.Context
+type AutomationOptionator func(automation *Automation)
 
-var (
-	allocCtx context.Context
-)
-
-func WithHeadless(yesno bool) AutomationOptionator {
-	return func(ctx *context.Context) context.Context {
-		if !yesno {
-			return *ctx
-		}
-
-		output, _ := chromedp.NewExecAllocator(
-			*ctx,
-			chromedp.Headless,
-		)
-		return output
+func WithHeadless() AutomationOptionator {
+	return func(automation *Automation) {
+		automation.AllocatorOptions = append(automation.AllocatorOptions, chromedp.Headless)
 	}
 }
 
-func WithNoSandbox(yesno bool) AutomationOptionator {
-	return func(ctx *context.Context) context.Context {
-		if !yesno {
-			return *ctx
-		}
-
-		output, _ := chromedp.NewExecAllocator(
-			*ctx,
-			chromedp.NoSandbox,
-		)
-		return output
+func WithNoSandbox() AutomationOptionator {
+	return func(automation *Automation) {
+		automation.AllocatorOptions = append(automation.AllocatorOptions, chromedp.NoSandbox)
 	}
 }
 
-var allocateOnce sync.Once
+func WithDownloadMemFs() AutomationOptionator {
+	return func(automation *Automation) {
+		automation.Fs = NewMockFilesystem("/home/user")
+	}
+}
+
+// var allocateOnce sync.Once
 
 func NewAutomation(
 	options ...AutomationOptionator,
 ) *Automation {
-	// Start the browser exactly once, as needed.
-	allocateOnce.Do(func() {
-		ctx, _ := chromedp.NewExecAllocator(
-			context.Background(),
-		)
+	automation := &Automation{
+		Context: context.Background(),
+		Delay:   200 * time.Millisecond,
+		Fs:      NewRealFilesystem(),
+		AllocatorOptions: []chromedp.ExecAllocatorOption{
+			chromedp.NoFirstRun,
+			chromedp.NoDefaultBrowserCheck,
 
-		allocCtx, _ = chromedp.NewContext(ctx)
+			// After Puppeteer's default behavior.
+			chromedp.Flag("disable-background-networking", true),
+			chromedp.Flag("enable-features", "NetworkService,NetworkServiceInProcess"),
+			chromedp.Flag("disable-background-timer-throttling", true),
+			chromedp.Flag("disable-backgrounding-occluded-windows", true),
+			chromedp.Flag("disable-breakpad", true),
+			chromedp.Flag("disable-client-side-phishing-detection", true),
+			chromedp.Flag("disable-default-apps", true),
+			chromedp.Flag("disable-dev-shm-usage", true),
+			chromedp.Flag("disable-extensions", true),
+			chromedp.Flag("disable-features", "site-per-process,Translate,BlinkGenPropertyTrees"),
+			chromedp.Flag("disable-hang-monitor", true),
+			chromedp.Flag("disable-ipc-flooding-protection", true),
+			chromedp.Flag("disable-popup-blocking", true),
+			chromedp.Flag("disable-prompt-on-repost", true),
+			chromedp.Flag("disable-renderer-backgrounding", true),
+			chromedp.Flag("disable-sync", true),
+			chromedp.Flag("force-color-profile", "srgb"),
+			chromedp.Flag("metrics-recording-only", true),
+			chromedp.Flag("safebrowsing-disable-auto-update", true),
+			chromedp.Flag("enable-automation", true),
+			chromedp.Flag("password-store", "basic"),
+			chromedp.Flag("use-mock-keychain", true),
+		},
+	}
 
-		logrus.Infof("Allocated context: %v", &allocCtx)
+	// loop over options and apply
+	for _, option := range options {
+		option(automation)
+	}
 
-		if err := chromedp.Run(allocCtx); err != nil {
-			logrus.Panic(err)
-		}
-
-		chromedp.ListenBrowser(allocCtx, func(ev interface{}) {
-			if ev, ok := ev.(*runtime.EventExceptionThrown); ok {
-				logrus.Panicf("%+v\n", ev.ExceptionDetails)
-			}
-		})
-	})
+	ctx, _ := chromedp.NewExecAllocator(
+		automation.Context,
+		automation.AllocatorOptions...,
+	)
 
 	// create a timeout as a safety net to prevent any infinite wait loops
-	ctx, cleanup := context.WithTimeout(allocCtx, 60*time.Second)
+	ctx, cleanup := context.WithTimeout(ctx, 60*time.Second)
+	automation.Context, _ = chromedp.NewContext(ctx)
 
-	automation := &Automation{
-		Context: ctx,
-		Cleanup: cleanup,
-		Delay:   200 * time.Millisecond,
+	logrus.Infof("Allocated context: %v", &automation.Context)
+
+	if err := chromedp.Run(automation.Context); err != nil {
+		cleanup()
+		logrus.Panic(err)
 	}
+	automation.Cleanup = cleanup
+
+	chromedp.ListenBrowser(automation.Context, func(ev interface{}) {
+		if ev, ok := ev.(*runtime.EventExceptionThrown); ok {
+			logrus.Panicf("%+v\n", ev.ExceptionDetails)
+		}
+	})
 
 	return automation
 }
@@ -109,7 +128,6 @@ func (a *Automation) SetViewportSize(width int64, height int64) {
 	AssertErrorToNilf(
 		fmt.Sprintf("could not set viewport size: %dx%d", width, height),
 		err)
-
 }
 
 func (a *Automation) GetLocation() url.URL {
@@ -157,7 +175,6 @@ func (a *Automation) Find(selector string) {
 		fmt.Sprintf("could not find: %s", selector),
 		err)
 	logrus.Debugf("Found %s", selector)
-
 }
 
 func (a *Automation) Click(selector string) {
@@ -201,7 +218,6 @@ func (a *Automation) Fill(selector string, value string) {
 		err)
 
 	logrus.Debugf("Filled %s with %s", selector, value)
-
 }
 
 func (a *Automation) FillSensitive(selector string, value string) {
@@ -233,28 +249,23 @@ func (a *Automation) Pause(ms int) {
 		err)
 
 	logrus.Debugf("Paused for %d sec", ms)
-
 }
 
 func (a *Automation) DownloadFile(
 	downloadpath string,
 	action func() error,
 ) (string, error) {
+	resolvedDownloadPath := a.Fs.ExpandPathWithHome(downloadpath)
 	logrus.Debugf("Downloading: %s", downloadpath)
 
-	targetDir, targetFilename := path.Split(downloadpath)
-	storagePath := ResolveFileArg(
-		"",
-		"BANKDOWNLOADER_DOWNLOADDIR",
-		path.Join("downloads", targetDir),
+	targetDir, targetFilename := path.Split(
+		resolvedDownloadPath,
 	)
-	savedFilename := path.Join(storagePath, targetFilename)
-	is_downloaded := make(chan string, 1)
+	savedFilename := path.Join(targetDir, targetFilename)
+	download_queue := make(chan string, 1)
 
-	// set up a listener to watch the download events and close the channel
-	// when complete this could be expanded to handle multiple downloads
-	// through creating a guid map, monitor download urls via
-	// EventDownloadWillBegin, etc
+	// set up a listener to watch the download events
+	// filename downloaded is communicated through the channel
 	chromedp.ListenTarget(a.Context, func(v interface{}) {
 		ev, ok := v.(*browser.EventDownloadProgress)
 		if ok {
@@ -263,35 +274,37 @@ func (a *Automation) DownloadFile(
 				completed = fmt.Sprintf("%0.2f%%", ev.ReceivedBytes/ev.TotalBytes*100.0)
 			}
 
-			log.Printf("state: %s, completed: %s\n", ev.State.String(), completed)
+			logrus.Debugf("state: %s, completed: %s\n", ev.State.String(), completed)
 			if ev.State == browser.DownloadProgressStateCompleted {
-				is_downloaded <- ev.GUID
-				close(is_downloaded)
+				download_queue <- ev.GUID
 			}
 		}
 	})
 	logrus.Debugf("Listening for download event")
 
-	err := chromedp.Run(a.Context,
+	if err := chromedp.Run(a.Context,
 		browser.
 			SetDownloadBehavior(browser.SetDownloadBehaviorBehaviorAllowAndName).
-			WithDownloadPath(storagePath).
-			WithEventsEnabled(true))
-	AssertErrorToNilf("could not save file: %w", err)
+			WithDownloadPath(targetDir).
+			WithEventsEnabled(true),
+	); err != nil && !strings.Contains(err.Error(), "net::ERR_ABORTED") {
+		AssertErrorToNilf(
+			fmt.Sprintf("could not set download behavior: %s", targetDir),
+			err)
+	}
 
-	err = action()
-	AssertErrorToNilf("Problem initiating download: %w", err)
+	AssertErrorToNilf("Problem initiating download: %w", action())
 
-	downloaded := <-is_downloaded
-	downloadedPath := path.Join(storagePath, downloaded)
+	downloaded_filename := <-download_queue
+	downloadedPath := path.Join(targetDir, downloaded_filename)
 
 	// check if the file exists
-	if _, err := os.Stat(downloadedPath); os.IsNotExist(err) {
+	if _, err := a.Fs.GetFs().Stat(downloadedPath); os.IsNotExist(err) {
 		return "", fmt.Errorf("could not download file: %s", downloadedPath)
 	}
 
 	// move the file to the expected location
-	if err := os.Rename(downloadedPath, savedFilename); err != nil {
+	if err := a.Fs.GetFs().Rename(downloadedPath, savedFilename); err != nil {
 		return "", fmt.Errorf("could not move file: %s", err)
 	}
 	logrus.Debugf("Downloaded: %s", savedFilename)
@@ -330,17 +343,3 @@ func EnsureChromeExists() {
 		panic(err)
 	}
 }
-
-// func TakeScreenshot(page playwright.Page, topic string) {
-// 	cwd := GetCwd()
-// 	if _, err := os.Stat(path.Join(cwd, "screenshots")); os.IsNotExist(err) {
-// 		os.Mkdir(path.Join(cwd, "screenshots"), 0755)
-// 	}
-// 	screenshotPath := path.Join(cwd, "screenshots", fmt.Sprintf("%s.png", slug.Make(topic)))
-// 	if _, err := page.Screenshot(playwright.PageScreenshotOptions{
-// 		Path:     playwright.String(screenshotPath),
-// 		FullPage: playwright.Bool(true),
-// 	}); err != nil {
-// 		logrus.Errorln("Could not take screenshot: ", err)
-// 	}
-// }

@@ -156,8 +156,6 @@ func (processor *AnzProcessor) DownloadTransactions(
 		fmt.Sprintf("could not download file: %s", filename),
 		err)
 
-	logrus.Info("Downloaded", filename)
-
 	return filename, nil
 }
 

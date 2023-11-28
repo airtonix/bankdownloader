@@ -286,8 +286,8 @@ func TestAnzSourceLogin(t *testing.T) {
 	logrus.SetLevel(logrus.DebugLevel)
 
 	automation := core.NewAutomation(
-		core.WithHeadless(true),
-		core.WithNoSandbox(true),
+		core.WithHeadless(),
+		core.WithNoSandbox(),
 	)
 
 	sourceConfig, credentials := MakeConfigurations(s.URL)
@@ -309,10 +309,10 @@ func TestAnzSourceDownload(t *testing.T) {
 
 	s := MockServer(t)
 	defer s.Close()
-
 	automation := core.NewAutomation(
-		core.WithHeadless(true),
-		core.WithNoSandbox(true),
+		core.WithHeadless(),
+		core.WithNoSandbox(),
+		core.WithDownloadMemFs(),
 	)
 
 	sourceConfig, credentials := MakeConfigurations(s.URL)

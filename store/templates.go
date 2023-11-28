@@ -12,6 +12,8 @@ import (
 // the configuiation for the template is stored in the config file under the
 // key `outputTemplate`
 type FilenameTemplateContext struct {
+	Home       string
+	ConfigDir  string
 	Source     string
 	SourceSlug string
 	Account    FilenameTemplateContextAccount
@@ -39,6 +41,7 @@ func NewFilenameTemplateContext(
 	fromDate time.Time,
 	toDate time.Time,
 ) *FilenameTemplateContext {
+
 	return &FilenameTemplateContext{
 		Source:     source,
 		SourceSlug: slug.Make(source),

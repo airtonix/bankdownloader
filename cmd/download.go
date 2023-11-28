@@ -17,12 +17,10 @@ var downloadCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		history := store.GetHistory()
 		config := store.GetConfig()
-		headless, _ := cmd.Flags().GetBool("headless")
-		sandbox, _ := cmd.Flags().GetBool("sandbox")
 
 		automation := core.NewAutomation(
-			core.WithHeadless(headless),
-			core.WithNoSandbox(sandbox),
+			core.WithHeadless(),
+			core.WithNoSandbox(),
 		)
 
 		strategy := store.NewHistoryStrategy(cmd.Flag("range-strategy").Value.String())

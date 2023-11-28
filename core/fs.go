@@ -11,6 +11,7 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/afero"
 	"golang.org/x/exp/constraints"
 )
 
@@ -83,4 +84,63 @@ func ResolveFileArg(
 	logrus.Debug("using xdgFilepath")
 	// config file in XDG directory
 	return xdgFilepath
+}
+
+type Filesystem interface {
+	HomeDir() string
+	GetFs() afero.Fs
+	ExpandPathWithHome(s string) string
+}
+
+type RealFilesystem struct {
+	afero.Fs
+}
+
+// ensure RealFilesystem implements Filesystem
+var _ Filesystem = (*RealFilesystem)(nil)
+
+func (r *RealFilesystem) HomeDir() string {
+	home, _ := os.UserHomeDir()
+	return home
+}
+
+func (r *RealFilesystem) GetFs() afero.Fs {
+	return r.Fs
+}
+
+func (r *RealFilesystem) ExpandPathWithHome(s string) string {
+	return strings.ReplaceAll(s, "~", r.HomeDir())
+}
+
+func NewRealFilesystem() *RealFilesystem {
+	return &RealFilesystem{
+		Fs: afero.NewOsFs(),
+	}
+}
+
+type MockFilesystem struct {
+	homeDir string
+	afero.Fs
+}
+
+// ensure MockFilesystem implements Filesystem
+var _ Filesystem = (*MockFilesystem)(nil)
+
+func (m *MockFilesystem) HomeDir() string {
+	return m.homeDir
+}
+
+func (m *MockFilesystem) GetFs() afero.Fs {
+	return m.Fs
+}
+
+func (m *MockFilesystem) ExpandPathWithHome(s string) string {
+	return strings.ReplaceAll(s, "~", m.HomeDir())
+}
+
+func NewMockFilesystem(homeDir string) *MockFilesystem {
+	return &MockFilesystem{
+		homeDir: homeDir,
+		Fs:      afero.NewMemMapFs(),
+	}
 }
